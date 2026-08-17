@@ -1,0 +1,53 @@
+name: CI
+
+# GrACE-Demo: keep this green. No Grafana, no GOLD `grace` DB, no A3/A4 harnesses.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint-migration-revision-ids:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/lint/check-migration-revision-ids.sh
+
+  embeddings-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: uv sync --extra dev
+      - run: uv run pytest tests/shared/test_embeddings.py -q --tb=line
+
+  migrate-demo-db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: grace_demo
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: uv sync --extra dev
+      - run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost:5432/grace_demo

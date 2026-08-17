@@ -1,0 +1,41 @@
+# Northwind Overnight — claims exception memo (FICTIONAL)
+
+Internal memo — Claims Operations
+Date: 12 March 2026
+From: Priya Nandakumar, Head of Claims
+To: Overnight courier adjusters
+
+## Purpose
+
+This memo restates the exception process for **overnight courier claims** under
+the Northwind Specialty Cargo endorsement. It is a teaching sample for GrACE-Demo.
+No real policyholders, claim numbers, or employees are described.
+
+## Standard path
+
+1. Notice of loss must arrive within **48 hours** of the scheduled delivery window.
+2. The adjuster verifies the airway bill against the declared contents list.
+3. Settlement follows the schedule in Endorsement C-14 unless an exception applies.
+
+## Exception process
+
+An overnight courier claim may leave the standard path only when **all** of the
+following are true:
+
+- The delay is caused by a **weather ground-stop** documented by the carrier, or
+  by a **customs hold** with a written notice; and
+- The shipper requested **signature-required** delivery; and
+- A supervisor (role: Claims Supervisor) records a short rationale in the claim
+  file **before** any payment above the schedule.
+
+If those conditions are not met, the claim stays on the standard path. Do not
+invent a goodwill exception.
+
+## Evidence
+
+Acceptable evidence: carrier delay certificate, customs hold letter, signed
+delivery request. Chat screenshots are not evidence.
+
+## Contact
+
+Questions: claims-ops@northwind.example (fictional).
