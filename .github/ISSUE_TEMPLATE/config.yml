@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Read the operator manual first
+    url: https://github.com/Chris-Rebentisch/GrACE-Demo/blob/main/docs/LLM_OPERATOR.md
+    about: Most "it doesn't work" reports are answered by Session 0 + INSTALL.md.

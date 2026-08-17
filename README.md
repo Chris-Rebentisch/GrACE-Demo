@@ -1,5 +1,10 @@
 # GrACE-Demo
 
+[![CI](https://github.com/Chris-Rebentisch/GrACE-Demo/actions/workflows/ci.yml/badge.svg)](https://github.com/Chris-Rebentisch/GrACE-Demo/actions/workflows/ci.yml)
+[![Secret Scan](https://github.com/Chris-Rebentisch/GrACE-Demo/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/Chris-Rebentisch/GrACE-Demo/actions/workflows/secret-scan.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python 3.14](https://img.shields.io/badge/python-3.14-blue)
+
 **Graph as Auditable Context Engine — classroom / student edition.**
 
 GrACE turns documents (and optionally email) into an **auditable knowledge graph**:
@@ -80,6 +85,11 @@ skills in `grace-claude-skills/`, and starts the intent Q&A.
 `.env` is gitignored — never commit it or paste keys anywhere. The sample corpus is
 fictional. Do not point the demo at documents you are not allowed to process.
 Dev-only credentials (`root`/`gracedev` for ArcadeDB) are for localhost.
+
+## Contributing / security
+
+[CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · issues welcome (paste
+the output of the two gates, never your `.env`).
 
 ## License
 
