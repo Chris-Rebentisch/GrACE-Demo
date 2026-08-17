@@ -27,7 +27,7 @@ from src.extraction.name_utils import (
 from src.graph.arcade_client import ArcadeClient
 from src.graph.cypher_utils import escape_cypher_string
 from src.graph.entity_ops import append_entity_alias, canonical_lookup
-from src.shared.embeddings import embed_texts
+from src.shared.embeddings import embed_texts, embeddings_enabled
 
 log = structlog.get_logger()
 
@@ -557,15 +557,45 @@ class EntityResolver:
             - EntityResolutionResult with resolution_tier="_tier3" if needs LLM (sentinel)
             - None should not happen
         """
+        # GrACE-Demo: embeddings are optional. Without a vectors backend Tier 2
+        # cannot run; conservative D86 bias → treat as new (Tier 1 exact/alias
+        # matching already ran). Never let a missing embed backend crash extraction.
+        if not embeddings_enabled(self._ollama_base_url):
+            log.info(
+                "entity_resolution.tier2_skipped_embeddings_disabled",
+                entity_type=entity.entity_type,
+            )
+            return EntityResolutionResult(
+                extracted_name=entity.name,
+                extracted_type=entity.entity_type,
+                resolution_tier="new",
+                blocking_key=blocking_key,
+                is_new=True,
+            )
+
         # Embed the extracted entity
         entity_text = build_embedding_text(
             entity.name, entity.entity_type, entity.properties
         )
-        entity_vec = await embed_texts(
-            [entity_text],
-            base_url=self._ollama_base_url,
-            model=self._config.er_embedding_model,
-        )
+        try:
+            entity_vec = await embed_texts(
+                [entity_text],
+                base_url=self._ollama_base_url,
+                model=self._config.er_embedding_model,
+            )
+        except Exception as exc:  # noqa: BLE001 — D86 conservative bias on backend failure
+            log.warning(
+                "entity_resolution.embed_failed_treat_as_new",
+                entity_type=entity.entity_type,
+                error=str(exc),
+            )
+            return EntityResolutionResult(
+                extracted_name=entity.name,
+                extracted_type=entity.entity_type,
+                resolution_tier="new",
+                blocking_key=blocking_key,
+                is_new=True,
+            )
         query_vec = entity_vec[0]
 
         # D445.3 — SQL ANN query via vectorNeighbors(). Index naming convention

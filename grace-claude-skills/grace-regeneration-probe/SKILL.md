@@ -17,6 +17,16 @@ description: >
 
 # grace-regeneration-probe
 
+> **GrACE-Demo note.** This probe was written during the internal build, where "Claude" was
+> the operating LLM and a large *local* Ollama model was the configured provider (hence the
+> "heat" warnings). In GrACE-Demo the configured provider is the student's **cloud** vendor,
+> so: read "Claude" as *you, the operating LLM (any vendor)*; the `--autonomous` / router
+> paths now call the configured vendor via `get_provider()`; and the heat caveats only apply
+> if you deliberately configured a local Ollama chat model. Paths are relative to the
+> checkout (`$GRACE_ROOT`). This probe is optional — the demo loop is documented in
+> `docs/ONBOARDING.md`.
+
+
 ## ★ NORTH STAR
 **Prove the graph can ANSWER, faithfully.** A1 proved retrieval finds the right
 grounded subgraph; A2 proves regeneration turns that subgraph into a human-readable

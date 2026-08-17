@@ -37,7 +37,9 @@ from _common import add_grace_to_path, route_logs_to_stderr  # noqa: E402
 import faithfulness_score as fs  # noqa: E402
 
 API_DEFAULT = "http://127.0.0.1:8000"
-CLAUDE_MODEL = "claude-haiku-4-5-20251001"  # heat-free cloud; NEVER the local llama
+# GrACE-Demo: autonomous decompression uses the cloud vendor configured in
+# config/discovery.yaml via get_provider() (vendor-agnostic). The --answer-file
+# in-loop path needs no API call at all.
 
 
 async def _retrieval_context(api: str, query: str, top_k: int, mode: str | None):
@@ -246,7 +248,7 @@ async def _local_model_answer(model: str, system: str, context: str, query: str)
 
 
 async def _autonomous_answer(system: str, context: str, query: str) -> str | None:
-    """Decompress via AnthropicProvider DIRECT (never get_provider()). Mirrors the
+    """Decompress via the configured cloud vendor (get_provider()). Mirrors the
     real ResponseSynthesizer's call shape: system + (context\\n\\nquery)."""
     import os
     key = os.environ.get("LLM_API_KEY")
@@ -257,17 +259,28 @@ async def _autonomous_answer(system: str, context: str, query: str) -> str | Non
         except Exception:
             key = None
     if not key:
-        print("  LLM_API_KEY not set — use --answer-file (Claude-in-the-loop).", file=sys.stderr)
+        print("  LLM_API_KEY not set — use --answer-file (agent-in-the-loop).", file=sys.stderr)
         return None
-    from src.shared.anthropic_provider import AnthropicProvider
-    provider = AnthropicProvider(api_key=key, model=CLAUDE_MODEL)
+    try:
+        from src.shared.llm_provider import get_provider
+        provider = get_provider()
+    except Exception as e:  # noqa: BLE001
+        print(f"  configured LLM provider unavailable ({str(e)[:80]}). Use --answer-file (in-loop).",
+              file=sys.stderr)
+        return None
+    if type(provider).__name__ == "OllamaProvider":
+        ok, reason = _decompressor_size_guard(getattr(provider, "model", ""))
+        if not ok:
+            print(f"  configured local model BLOCKED: {reason} Use --answer-file (in-loop).",
+                  file=sys.stderr)
+            return None
     user = f"{context}\n\n{query}"
     try:
         resp = await provider.generate(system_prompt=system, user_prompt=user,
                                        temperature=0.2, max_tokens=800, json_mode=False)
         return resp.text
     except Exception as e:  # 401/expired key etc. — degrade like A1
-        print(f"  Claude API unavailable ({str(e)[:80]}). Use --answer-file (in-loop).",
+        print(f"  LLM API unavailable ({str(e)[:80]}). Use --answer-file (in-loop).",
               file=sys.stderr)
         return None
 

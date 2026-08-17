@@ -1,0 +1,62 @@
+[
+  {
+    "case_id": "demo_insurance-001",
+    "query_text": "What is the exception process for overnight courier claims?",
+    "expected_output": "An overnight courier claim may leave the standard path only when all three conditions hold: the delay is caused by a carrier-documented weather ground-stop or a customs hold with written notice; the shipper requested signature-required delivery; and a Claims Supervisor records a short rationale in the claim file before any payment above the schedule. Otherwise the claim stays on the standard path.",
+    "expected_retrieval_path": "graph",
+    "query_complexity": "multi_hop",
+    "ontology_module": "insurance",
+    "source_documents": ["data/demo-corpus/northwind-overnight-exception-memo.txt"],
+    "notes": "Headline demo question — the three-condition exception rule."
+  },
+  {
+    "case_id": "demo_insurance-002",
+    "query_text": "How soon must notice of loss arrive for an overnight courier claim?",
+    "expected_output": "Notice of loss must arrive within 48 hours of the scheduled delivery window.",
+    "expected_retrieval_path": "keyword",
+    "query_complexity": "simple",
+    "ontology_module": "insurance",
+    "source_documents": ["data/demo-corpus/northwind-overnight-exception-memo.txt"],
+    "notes": "Single-fact lookup on the standard path."
+  },
+  {
+    "case_id": "demo_insurance-003",
+    "query_text": "Who must record a rationale before a payment above the settlement schedule?",
+    "expected_output": "A supervisor in the Claims Supervisor role must record a short rationale in the claim file before any payment above the schedule.",
+    "expected_retrieval_path": "graph",
+    "query_complexity": "simple",
+    "ontology_module": "insurance",
+    "source_documents": ["data/demo-corpus/northwind-overnight-exception-memo.txt"],
+    "notes": "Role lookup — the approval requirement."
+  },
+  {
+    "case_id": "demo_insurance-004",
+    "query_text": "What counts as acceptable evidence for the courier claim exception?",
+    "expected_output": "Acceptable evidence is a carrier delay certificate, a customs hold letter, or a signed delivery request. Chat screenshots are not evidence.",
+    "expected_retrieval_path": "keyword",
+    "query_complexity": "simple",
+    "ontology_module": "insurance",
+    "source_documents": ["data/demo-corpus/northwind-overnight-exception-memo.txt"],
+    "notes": "Evidence list plus the explicit exclusion."
+  },
+  {
+    "case_id": "demo_insurance-005",
+    "query_text": "Which endorsement sets the settlement schedule for overnight courier claims?",
+    "expected_output": "Settlement follows the schedule in Endorsement C-14 unless an exception applies.",
+    "expected_retrieval_path": "keyword",
+    "query_complexity": "simple",
+    "ontology_module": "insurance",
+    "source_documents": ["data/demo-corpus/northwind-overnight-exception-memo.txt"],
+    "notes": "Named-document lookup."
+  },
+  {
+    "case_id": "demo_insurance-006",
+    "query_text": "Did the follow-up email change the exception rule stated in the memo?",
+    "expected_output": "No. The follow-up email confirms the memo: a carrier weather ground-stop certificate plus signature-required on the airway bill allows the exception path, the supervisor rationale must be recorded before paying above schedule, and a chat screenshot is not evidence.",
+    "expected_retrieval_path": "fused",
+    "query_complexity": "multi_hop",
+    "ontology_module": "insurance",
+    "source_documents": ["data/demo-corpus/northwind-overnight-exception-memo.txt", "data/demo-corpus/sample-exception-followup.eml"],
+    "notes": "Cross-document consistency check (memo vs. email)."
+  }
+]

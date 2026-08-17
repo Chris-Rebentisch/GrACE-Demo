@@ -220,8 +220,21 @@ async def _probe_embeddings_backend() -> None:
     without Ollama must not log a scary ERROR. Local Ollama still gets
     the 2.5s GET + degeneracy check. Never raises.
     """
-    provider = (os.environ.get("GRACE_EMBED_PROVIDER") or "").strip().lower()
-    if provider in {"openai", "openai_compatible", "cloud"}:
+    from src.shared.embeddings import resolve_embed_provider
+
+    provider = resolve_embed_provider()
+    if provider == "none":
+        logger.info(
+            "embeddings_disabled",
+            advice=(
+                "No embeddings vendor configured (GRACE_EMBED_PROVIDER resolved to "
+                "'none'). Retrieval uses keyword + graph strategies; entity resolution "
+                "uses exact/alias matching. Set GRACE_EMBED_API_KEY (OpenAI-compatible) "
+                "or GRACE_EMBED_PROVIDER=ollama to enable vectors."
+            ),
+        )
+        return
+    if provider == "openai":
         await _probe_embedding_degeneracy()
         return
 

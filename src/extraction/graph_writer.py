@@ -49,7 +49,7 @@ from src.graph.entity_ops import (
     insert_entity,
 )
 from src.ingestion.communications.sensitivity_tagger import tags_from_bar_form, tags_to_bar_form
-from src.shared.embeddings import embed_texts
+from src.shared.embeddings import embed_texts, embeddings_enabled
 from src.graph.relationship_ops import insert_relationship
 
 log = structlog.get_logger()
@@ -661,13 +661,16 @@ async def write_batch(
                 chunk_gid_map[cid] = existing_gid
                 continue
 
-            # Compute embedding
+            # Compute embedding (optional in GrACE-Demo — a chunk without a
+            # vector is still retrievable by BM25 / graph strategies).
             ollama_url = config.extraction_base_url or "http://localhost:11434"
-            chunk_embedding = (await embed_texts(
-                [chunk_obj.text],
-                base_url=ollama_url,
-                model=config.er_embedding_model,
-            ))[0]
+            chunk_embedding = None
+            if embeddings_enabled(ollama_url):
+                chunk_embedding = (await embed_texts(
+                    [chunk_obj.text],
+                    base_url=ollama_url,
+                    model=config.er_embedding_model,
+                ))[0]
 
             # Compute sensitivity tags
             chunk_sensitivity = _compute_chunk_sensitivity_tags(chunk_obj.text)
@@ -908,11 +911,13 @@ async def write_batch(
                     entity_create.properties,
                 )
                 ollama_url = config.extraction_base_url or "http://localhost:11434"
-                vec = (await embed_texts(
-                    [embed_text],
-                    base_url=ollama_url,
-                    model=config.er_embedding_model,
-                ))[0]
+                vec = None
+                if embeddings_enabled(ollama_url):
+                    vec = (await embed_texts(
+                        [embed_text],
+                        base_url=ollama_url,
+                        model=config.er_embedding_model,
+                    ))[0]
                 resp = await insert_entity(arcade_client, entity_create, embedding=vec)
                 # F-0047b / ISS-0055 Layer 1 — provenance on the new-entity
                 # path. Fresh CREATE: seed provenance from this write.

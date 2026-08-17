@@ -1032,6 +1032,11 @@ async def build_indexes() -> dict:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ArcadeDBError as exc:
         raise HTTPException(status_code=503, detail=exc.detail) from exc
+    except Exception as exc:  # noqa: BLE001 — surface the cause instead of a bare 500
+        logger.error("retrieval.build_indexes.error", error=str(exc), exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Index rebuild failed: {type(exc).__name__}: {exc}"
+        ) from exc
 
 
 @router.get("/config", response_model=RetrievalConfig)

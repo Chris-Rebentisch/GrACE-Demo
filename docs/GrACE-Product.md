@@ -1,8 +1,12 @@
 # GrACE — Product Definition
 
-**Status:** Canonical
+**Status:** Background reading (full-product definition)
 **Last updated:** 2026-05-30
-**Companion docs:** GrACE-Roadmap.md (phase plan), GrACE-Backlog.md (chunk index), GrACE-Decisions.md (D-series registry), GrACE-Doc-Map.md (index of all docs)
+
+> **GrACE-Demo readers:** this describes the *full* GrACE product. The classroom cut in
+> this repository ships a subset — see [CHARTER.md](CHARTER.md) for what is in and out.
+> In particular the web UI in §4.9 is **not** part of the demo (the student's LLM is the
+> interface), and the deep-reference documents named in §11 are not included here.
 
 ---
 
@@ -138,17 +142,9 @@ Everything is airgapped, everything is auditable. All LLM inference runs locally
 
 The tool and the work product are separate. The module stack is domain-agnostic infrastructure. The ontology is the domain-specific output. This separation enables deployment across industries without rebuilding the system, and it is the foundation of the services-to-software trajectory described in §9.
 
-## 11. Pointers to Deep-Reference Documents
+## 11. Deep-reference documents
 
-Each topic in this document is elaborated by a deep-reference document or a normative spec. Do not duplicate content from those documents here; refer to them by name and let the Doc Map (GrACE-Doc-Map.md) be the index.
-
-Four-Layer Graph Architecture detail: GrACE-Four-Layer-Graph-Architecture.md.
-Reconciliation Layer specification: GrACE-Reconciliation-Layer.docx.
-Earned Autonomy framework: GrACE-Earned-Autonomy-System.docx.
-Elicitation Protocol normative spec: GrACE-Elicitation-Protocol.docx.
-Sensitivity Gate (shipped in Phase 5.5, Chunk 43): see Roadmap §7 and security-posture.md §27.
-Communications ingestion: GrACE-Communication-Ingestion.md.
-Federated mother-child architecture: Federated-KG-Architecture-Research.docx.
-Buyer-facing positioning: GrACE-Technology-Thesis-May-2026.docx.
-
-The Roadmap (GrACE-Roadmap.md) maps these capabilities onto build phases and chunks. The Backlog (GrACE-Backlog.md) is the per-chunk index. The Decisions registry (GrACE-Decisions.md) holds the D-series log. The Doc Map (GrACE-Doc-Map.md) is the index of all docs in this directory.
+The full product is elaborated by internal deep-reference documents (four-layer graph
+architecture, reconciliation layer, earned-autonomy framework, elicitation protocol,
+communications ingestion, federation, buyer-facing positioning). They are not part of
+this demo repository.

@@ -1,0 +1,43 @@
+# Northwind Specialty Cargo — Endorsement C-14: Overnight Courier Settlement Schedule (FICTIONAL)
+
+Endorsement C-14 to the Northwind Specialty Cargo policy form.
+Effective: 1 January 2026
+Issued by: Northwind Specialty Underwriting, Policy Forms Committee
+Applies to: overnight courier shipments declared on the airway bill
+
+This endorsement is a teaching sample for GrACE-Demo. No real policy, insurer,
+or policyholder is described.
+
+## 1. Purpose
+
+Endorsement C-14 sets the standard settlement schedule that adjusters apply to
+overnight courier claims when no exception applies. The exception process itself
+is defined by the Claims Operations exception memo of 12 March 2026, not by this
+endorsement.
+
+## 2. Settlement schedule
+
+| Loss category | Standard settlement | Cap per shipment |
+|---|---|---|
+| Delay beyond the delivery window (no damage) | 25% of declared value | 2,500 |
+| Partial loss or damage | Repair or replacement cost, whichever is lower | Declared value |
+| Total loss (shipment not delivered) | Declared value | 50,000 |
+
+Amounts are in the policy currency stated on the declarations page.
+
+## 3. Declared value
+
+The declared value is the value stated on the airway bill at the time of
+tender. If no value is declared, the schedule uses the invoice value in the
+declared contents list, capped at 5,000 per shipment.
+
+## 4. Payments above the schedule
+
+Any payment above the schedule requires (a) the exception conditions in the
+Claims Operations exception memo to be met, and (b) a written rationale from a
+Claims Supervisor recorded in the claim file before the payment is released.
+
+## 5. Related documents
+
+- Claims Operations exception memo (12 March 2026) — exception process.
+- Adjuster desk procedure OC-3 — how the standard path is worked day to day.

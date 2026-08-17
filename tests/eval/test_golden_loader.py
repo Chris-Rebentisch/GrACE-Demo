@@ -65,27 +65,13 @@ def _build_balanced(
 
 
 def test_packaged_golden_dataset_loads_and_validates() -> None:
-    """The hand-authored dataset shipped under src/eval/golden_dataset
-    must load cleanly and satisfy every distribution / coverage assertion."""
+    """The hand-authored GrACE-Demo dataset shipped under src/eval/golden_dataset
+    (relaxed per-deployment manifest over the fictional Northwind corpus) must
+    load cleanly; every case is a well-formed GoldenCase."""
     cases = load_golden_dataset(default_golden_dir())
-    assert len(cases) >= 50
-    by_complexity = Counter(c.query_complexity for c in cases)
-    total = len(cases)
-    targets = {
-        "simple": 0.30,
-        "multi_hop": 0.40,
-        "aggregate": 0.20,
-        "semantic": 0.10,
-    }
-    for bucket, target in targets.items():
-        actual = by_complexity[bucket] / total
-        assert abs(actual - target) <= 0.05, (
-            f"complexity bucket {bucket!r} at {actual:.3f} (target {target:.2f})"
-        )
-    by_module = Counter(c.ontology_module for c in cases)
-    for module in _OVERLAP_MODULES:
-        assert 8 <= by_module[module] <= 12, f"{module}: {by_module[module]}"
+    assert len(cases) >= 1
     assert all(isinstance(c, GoldenCase) for c in cases)
+    assert {c.ontology_module for c in cases} == {"insurance"}
 
 
 def test_schema_rejects_extra_fields(make_dataset_dir, case_factory) -> None:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""STEP 4 (no LLM) — Auto-accept a Claude-authored ontology proposal.
+"""STEP 4 (no LLM) — Auto-accept a LLM-authored ontology proposal.
 
 Replaces the HUMAN review/ratify gate (operator decision 2026-06-10: skip human
 ontology ratification on the Claude path; grace's /review + ratify CODE stays, we
@@ -55,6 +55,24 @@ def _project(item: dict, keys) -> dict:
     return {k: item[k] for k in keys if k in item}
 
 
+def _intent_fragment() -> dict | None:
+    """Load the intent meta-layer schema fragment from the GrACE checkout (best-effort)."""
+    try:
+        import sys
+        from pathlib import Path as _P
+
+        sys.path.insert(0, str(_P(__file__).resolve().parent))
+        from _common import add_grace_to_path  # noqa: E402
+
+        add_grace_to_path()
+        from src.ontology.intent_models import build_intent_schema_fragment  # noqa: E402
+
+        return build_intent_schema_fragment()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[auto-accept] WARN intent meta-layer not merged ({type(exc).__name__}: {exc})")
+        return None
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--in", dest="infile", required=True, help="Coverage-enriched seed_schema.json")
@@ -67,6 +85,10 @@ def main() -> None:
     ap.add_argument("--admin-key", default=None, help="X-Admin-Key if GRACE_ADMIN_KEY is set")
     ap.add_argument("--default-domain", default=None,
                     help="Domain for elements that lack one (default: the single entity domain, else 'general')")
+    ap.add_argument("--no-intent-layer", action="store_true",
+                    help="Do NOT merge the intent meta-layer (Decision_Principle / Decision_Rationale / "
+                         "Counterfactual / Mandatory_Provision + edges) into the ratified schema. "
+                         "Default: merged, so grace-intent-elicitation can write the human's why.")
     ap.add_argument("--no-sync", action="store_true", help="Ratify only; skip ArcadeDB DDL sync")
     ap.add_argument("--dry-run", action="store_true", help="Build payloads; do not POST")
     args = ap.parse_args()
@@ -97,15 +119,30 @@ def main() -> None:
     for name, r in schema_json["relationships"].items():
         modules.setdefault(r.get("domain", "general"), {"entity_types": {}, "relationships": {}})["relationships"][name] = r
 
+    # Intent meta-layer (grace-intent-elicitation): types + edges the human's why is
+    # written to. Derived from Pydantic (src/ontology/intent_models.py), merged as its
+    # own module so it never collides with the domain ontology.
+    if not args.no_intent_layer:
+        frag = _intent_fragment()
+        if frag:
+            for name, t in frag["entity_types"].items():
+                schema_json["entity_types"].setdefault(name, t)
+                modules.setdefault(t.get("domain", "intent"), {"entity_types": {}, "relationships": {}})["entity_types"].setdefault(name, t)
+            for name, r in frag["relationships"].items():
+                schema_json["relationships"].setdefault(name, r)
+                modules.setdefault(r.get("domain", "intent"), {"entity_types": {}, "relationships": {}})["relationships"].setdefault(name, r)
+            print(f"[auto-accept] intent meta-layer merged: {len(frag['entity_types'])} types, "
+                  f"{len(frag['relationships'])} relationships (module 'intent')")
+
     rate = (seed.get("quality_metrics") or {}).get("cq_coverage_rate")
     body = {
         "schema_json": schema_json,
         "schema_modules": modules,
         "source": args.source,
         "reviewer": args.reviewer,
-        "changelog": (f"Auto-accepted Claude-authored proposal: {len(ets)} types, "
+        "changelog": (f"Auto-accepted LLM-authored proposal: {len(ets)} types, "
                       f"{len(rels)} relationships, CQ coverage {rate}. "
-                      f"Human ontology ratification bypassed (operator decision 2026-06-10)."),
+                      f"Human ontology ratification bypassed by design (GrACE-Demo)."),
         "cq_coverage_snapshot": seed.get("quality_metrics") or None,
     }
     print(f"[auto-accept] proposal: {len(ets)} types, {len(rels)} relationships across "

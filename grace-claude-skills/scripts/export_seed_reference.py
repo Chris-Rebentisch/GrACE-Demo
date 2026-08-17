@@ -3,7 +3,7 @@
 
 Grounds the Claude-as-LLM ontology proposal against the SAME proven domain ontologies
 the native path uses (FIBO / LKIF / Schema.org / PROV-O) — but with Claude as the
-reasoner instead of gpt-oss. Reuses grace's own seed registry + `format_for_llm`, so the
+reasoner. Reuses grace's own seed registry + `format_for_llm`, so the
 reference text is identical to what the native schema extractor feeds its LLM.
 
 It selects every registry seed source whose `domains` include the requested domain, plus
@@ -12,7 +12,7 @@ markdown reference Claude reads during grace-ontology-proposal to ALIGN type nam
 hierarchy and fill `seed_source` / `seed_type_name` / `seed_alignment` / `provenance`.
 
 No heat: reads parsed seed JSON only. (`--provision` parses missing RDF via rdflib — CPU,
-still no gpt-oss.)
+still no LLM call.)
 
 Usage:
   python3 export_seed_reference.py --domain legal

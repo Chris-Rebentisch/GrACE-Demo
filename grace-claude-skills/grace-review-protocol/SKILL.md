@@ -1,7 +1,7 @@
 ---
 name: grace-review-protocol
 description: >
-  STEP 7 (the tranche gate) of the Claude-as-LLM onboarding flow. After a
+  STEP 7 (the tranche gate) of the GrACE-Demo produce track. After a
   domain tranche has seeded the graph (steps 1–6), Claude runs GrACE's
   established elicitation/review protocol AS A FACILITATOR while a human
   decides — reviewing the graph IN PLACE (not a quarantine) before the
@@ -14,8 +14,18 @@ description: >
 
 # grace-review-protocol
 
+> **GrACE-Demo note.** This probe was written during the internal build, where "Claude" was
+> the operating LLM and a large *local* Ollama model was the configured provider (hence the
+> "heat" warnings). In GrACE-Demo the configured provider is the student's **cloud** vendor,
+> so: read "Claude" as *you, the operating LLM (any vendor)*; the `--autonomous` / router
+> paths now call the configured vendor via `get_provider()`; and the heat caveats only apply
+> if you deliberately configured a local Ollama chat model. Paths are relative to the
+> checkout (`$GRACE_ROOT`). This probe is optional — the demo loop is documented in
+> `docs/ONBOARDING.md`.
+
+
 ## Role
-You (Claude) are the **review facilitator, not the decider.** You run GrACE's
+You (the operating LLM) are the **review facilitator, not the decider.** You run GrACE's
 established elicitation protocol — the science behind the questioning — over a
 freshly-seeded graph region. You surface what to look at, probe with the
 established techniques, and capture the human's judgment and rationale. **The
@@ -38,7 +48,7 @@ extraction (see **Independence guardrails**).
 
 ## Review IN PLACE (the chosen architecture)
 The native GrACE claim-review reads the `extraction_claims` **quarantine**. The
-Claude-as-LLM path (step 6, `import_extraction.py`) writes **straight to the
+LLM-as-operator path (step 6, `import_extraction.py`) writes **straight to the
 graph**, so that quarantine is empty for this data. We therefore review the
 **graph as it stands**:
 - **Read the graph** with the graph tools (all read-only, heat-free):

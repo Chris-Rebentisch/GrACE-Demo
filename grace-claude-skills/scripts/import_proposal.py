@@ -5,7 +5,7 @@ On the Claude path the proposal is auto-accepted by Step 4 (auto_accept.py), so 
 NO LONGER REQUIRED — use it only if you want the grace /review screen for inspection.
 It opens a read-only review session from a SeedSchema; it does not gate anything.
 
-Claude (the LLM) writes seed_schema.json following templates/seed_schema.example.json
+The operating LLM writes seed_schema.json following templates/seed_schema.example.json
 (the SeedSchema shape: entity_types[] + relationships[]). This script POSTs it to
 the running FastAPI server's review-start route, which opens the /review UI screen.
 
@@ -13,7 +13,7 @@ It auto-discovers a real merge_run_id from GET /api/discovery/merge-latest unles
 you pass --merge-run-id explicitly.
 
 Prereqs:
-  * uvicorn running (cd ~/grace && uvicorn src.api.main:app --port 8000)
+  * uvicorn running (uvicorn src.api.main:app --port 8000 from the checkout root)
   * GRACE_PERMISSION_ENFORCEMENT_ENABLED unset/0 (else review/start 403s with
     no_active_matrix — see the 2026-06-09 session log)
 
@@ -42,7 +42,7 @@ def _post(url: str, body: dict, admin_key: str | None) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--in", dest="infile", required=True, help="Claude-authored seed_schema.json")
+    ap.add_argument("--in", dest="infile", required=True, help="LLM-authored seed_schema.json")
     ap.add_argument("--reviewer", required=True, help="Reviewer name recorded on the session")
     ap.add_argument("--api-base", default="http://127.0.0.1:8000")
     ap.add_argument("--merge-run-id", default=None,

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""STEP 2 (persist, no LLM) — Import Claude-authored CQs into GrACE's live pipeline.
+"""STEP 2 (persist, no LLM) — Import LLM-authored CQs into GrACE's live pipeline.
 
-Claude (the LLM) writes a cqs.json following templates/cqs.example.json. This
+The operating LLM writes a cqs.json following templates/cqs.example.json. This
 script validates each row against grace's own `CompetencyQuestion` Pydantic model
 and persists via `bulk_create_cqs`, so the downstream CQ merge + ontology
 proposal + review pipeline pick them up exactly as if generated natively — but
-with ZERO gpt-oss inference.
+with no local model inference.
 
 Each CQ is tagged source=HUMAN_AUTHORED (operator-curated; these are reviewed
 before import) with metadata_extra.authoring_method="combined-a3" for audit.
@@ -29,7 +29,7 @@ import argparse
 import json
 from pathlib import Path
 
-from _common import add_grace_to_path, get_session
+from _common import add_grace_to_path, route_logs_to_stderr, get_session
 
 VALID_TYPES = {"SCOPING", "VALIDATING", "FOUNDATIONAL", "RELATIONSHIP", "METAPROPERTY", "UNCLASSIFIED"}
 VALID_STATUS = {"DRAFT", "ACCEPTED", "EDITED", "REJECTED", "OUT_OF_SCOPE"}
@@ -44,7 +44,7 @@ def _filename_to_id_map(db) -> dict[str, str]:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--grace-root", default=None)
-    ap.add_argument("--in", dest="infile", required=True, help="Path to Claude-authored cqs.json")
+    ap.add_argument("--in", dest="infile", required=True, help="Path to LLM-authored cqs.json")
     ap.add_argument("--domain", default="other", help="Fallback domain when a CQ omits one")
     ap.add_argument("--status", default="ACCEPTED", choices=sorted(VALID_STATUS),
                     help="Persisted status (default ACCEPTED so the canonical pipeline treats them as review-ready)")
@@ -52,6 +52,7 @@ def main() -> None:
     args = ap.parse_args()
 
     add_grace_to_path(args.grace_root)
+    route_logs_to_stderr(quiet=True)
     from src.discovery.cq_models import CompetencyQuestion  # noqa: E402
     from src.discovery.cq_database import bulk_create_cqs  # noqa: E402
 

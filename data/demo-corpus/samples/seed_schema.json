@@ -1,0 +1,645 @@
+{
+  "entity_types": [
+    {
+      "name": "Claims_Document",
+      "alternative_names": [
+        "Memo",
+        "Endorsement",
+        "Procedure"
+      ],
+      "parent_type": null,
+      "description": "A governing document in claims operations: an internal memo, a policy endorsement, or a desk procedure.",
+      "display_label": "Claims Document",
+      "plain_description": "A written rule-setting document (memo, endorsement, procedure).",
+      "example_snippet": "Endorsement C-14 to the Northwind Specialty Cargo policy form",
+      "domain": "insurance",
+      "properties": [
+        {
+          "name": "name",
+          "data_type": "string",
+          "description": "Document title or identifier (e.g. 'Endorsement C-14')",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "document_kind",
+          "data_type": "string",
+          "description": "memo | endorsement | procedure | email",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "effective_date",
+          "data_type": "string",
+          "description": "Effective / issue date",
+          "required": false,
+          "answerable_cqs": []
+        },
+        {
+          "name": "version",
+          "data_type": "string",
+          "description": "Version or revision label",
+          "required": false,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "llm_authored",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_type_name": null,
+      "seed_alignment": null,
+      "answerable_cqs": [
+        "Which endorsement defines the settlement schedule for overnight courier claims, and what are its loss categories and caps?",
+        "Which documents describe or govern the overnight courier exception process, and how do they reference each other?",
+        "Who owns the adjuster desk procedure and the exception memo?"
+      ],
+      "evidence_documents": [
+        "northwind-overnight-exception-memo.txt",
+        "northwind-endorsement-c14-settlement-schedule.txt",
+        "northwind-adjuster-desk-procedure-oc3.txt"
+      ],
+      "evidence_document_count": 3
+    },
+    {
+      "name": "Claims_Process",
+      "alternative_names": [
+        "Path",
+        "Procedure path"
+      ],
+      "parent_type": null,
+      "description": "A defined way of handling an overnight courier claim: the standard path or the exception process.",
+      "display_label": "Claims Process",
+      "plain_description": "How a claim is handled \u2014 the normal route or the exception route.",
+      "example_snippet": "An overnight courier claim may leave the standard path only when all of the following are true",
+      "domain": "insurance",
+      "properties": [
+        {
+          "name": "name",
+          "data_type": "string",
+          "description": "Process name (e.g. 'Standard path', 'Exception process')",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "process_kind",
+          "data_type": "string",
+          "description": "standard | exception",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "notice_deadline_hours",
+          "data_type": "integer",
+          "description": "Hours after the delivery window within which notice of loss must arrive",
+          "required": false,
+          "answerable_cqs": []
+        },
+        {
+          "name": "steps",
+          "data_type": "string",
+          "description": "Ordered summary of the steps",
+          "required": false,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "llm_authored",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_type_name": null,
+      "seed_alignment": null,
+      "answerable_cqs": [
+        "What is the exception process for overnight courier claims?",
+        "Which conditions must all be true before an overnight courier claim may leave the standard path?",
+        "Within how many hours must notice of loss arrive for an overnight courier claim?",
+        "Which endorsement defines the settlement schedule for overnight courier claims, and what are its loss categories and caps?",
+        "What forms of evidence are acceptable, and which are explicitly not acceptable, for a courier claim exception?",
+        "Which documents describe or govern the overnight courier exception process, and how do they reference each other?",
+        "What are the steps of the standard path for an overnight courier claim?",
+        "Is there any goodwill exception for overnight courier claims?"
+      ],
+      "evidence_documents": [
+        "northwind-overnight-exception-memo.txt",
+        "northwind-adjuster-desk-procedure-oc3.txt"
+      ],
+      "evidence_document_count": 2
+    },
+    {
+      "name": "Exception_Condition",
+      "alternative_names": [
+        "Condition",
+        "Trigger"
+      ],
+      "parent_type": null,
+      "description": "One condition that must hold for a claim to leave the standard path (weather ground-stop, customs hold, signature-required delivery, supervisor rationale).",
+      "display_label": "Exception Condition",
+      "plain_description": "A single requirement that must be true for the exception route.",
+      "example_snippet": "The shipper requested signature-required delivery",
+      "domain": "insurance",
+      "properties": [
+        {
+          "name": "name",
+          "data_type": "string",
+          "description": "Short condition name",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "condition_text",
+          "data_type": "string",
+          "description": "Verbatim condition text",
+          "required": false,
+          "answerable_cqs": []
+        },
+        {
+          "name": "must_all_hold",
+          "data_type": "boolean",
+          "description": "True when this condition is conjunctive with the others",
+          "required": false,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "llm_authored",
+      "confidence": 0.85,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_type_name": null,
+      "seed_alignment": null,
+      "answerable_cqs": [
+        "Which conditions must all be true before an overnight courier claim may leave the standard path?",
+        "Which role must record a rationale before a payment above the settlement schedule?",
+        "What are the steps of the standard path for an overnight courier claim?"
+      ],
+      "evidence_documents": [
+        "northwind-overnight-exception-memo.txt"
+      ],
+      "evidence_document_count": 1
+    },
+    {
+      "name": "Role",
+      "alternative_names": [
+        "Job role"
+      ],
+      "parent_type": null,
+      "description": "A claims-operations role such as Overnight courier adjuster, Claims Supervisor, or Head of Claims.",
+      "display_label": "Role",
+      "plain_description": "A job function in claims operations.",
+      "example_snippet": "A supervisor (role: Claims Supervisor) records a short rationale",
+      "domain": "insurance",
+      "properties": [
+        {
+          "name": "name",
+          "data_type": "string",
+          "description": "Role name",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "responsibilities",
+          "data_type": "string",
+          "description": "What the role does",
+          "required": false,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "llm_authored",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_type_name": null,
+      "seed_alignment": null,
+      "answerable_cqs": [
+        "What is the exception process for overnight courier claims?",
+        "Which conditions must all be true before an overnight courier claim may leave the standard path?",
+        "Which role must record a rationale before a payment above the settlement schedule?",
+        "Within how many hours must notice of loss arrive for an overnight courier claim?",
+        "Which endorsement defines the settlement schedule for overnight courier claims, and what are its loss categories and caps?",
+        "What forms of evidence are acceptable, and which are explicitly not acceptable, for a courier claim exception?",
+        "Which documents describe or govern the overnight courier exception process, and how do they reference each other?",
+        "What are the steps of the standard path for an overnight courier claim?",
+        "Is there any goodwill exception for overnight courier claims?"
+      ],
+      "evidence_documents": [
+        "northwind-overnight-exception-memo.txt",
+        "northwind-adjuster-desk-procedure-oc3.txt"
+      ],
+      "evidence_document_count": 2
+    },
+    {
+      "name": "Person",
+      "alternative_names": [
+        "Employee"
+      ],
+      "parent_type": null,
+      "description": "A named individual (e.g. the Head of Claims).",
+      "display_label": "Person",
+      "plain_description": "A named person.",
+      "example_snippet": "From: Priya Nandakumar, Head of Claims",
+      "domain": "insurance",
+      "properties": [
+        {
+          "name": "name",
+          "data_type": "string",
+          "description": "Full name",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "email",
+          "data_type": "string",
+          "description": "Email address if stated",
+          "required": false,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "seed_aligned",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": "schema_org",
+      "seed_type_name": "Person",
+      "seed_alignment": "Aligned to schema.org Person.",
+      "answerable_cqs": [
+        "Who owns the adjuster desk procedure and the exception memo?"
+      ],
+      "evidence_documents": [
+        "northwind-overnight-exception-memo.txt",
+        "northwind-adjuster-desk-procedure-oc3.txt"
+      ],
+      "evidence_document_count": 2
+    },
+    {
+      "name": "Evidence_Type",
+      "alternative_names": [
+        "Evidence"
+      ],
+      "parent_type": null,
+      "description": "A kind of evidence that is either acceptable or explicitly not acceptable for a courier claim.",
+      "display_label": "Evidence Type",
+      "plain_description": "A document or proof that adjusters may (or may not) rely on.",
+      "example_snippet": "Chat screenshots are not evidence.",
+      "domain": "insurance",
+      "properties": [
+        {
+          "name": "name",
+          "data_type": "string",
+          "description": "Evidence name (e.g. 'carrier delay certificate')",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "acceptable",
+          "data_type": "boolean",
+          "description": "True if acceptable evidence, false if explicitly rejected",
+          "required": true,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "llm_authored",
+      "confidence": 0.85,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_type_name": null,
+      "seed_alignment": null,
+      "answerable_cqs": [
+        "What is the exception process for overnight courier claims?",
+        "What forms of evidence are acceptable, and which are explicitly not acceptable, for a courier claim exception?",
+        "Which documents describe or govern the overnight courier exception process, and how do they reference each other?",
+        "Is there any goodwill exception for overnight courier claims?"
+      ],
+      "evidence_documents": [
+        "northwind-overnight-exception-memo.txt",
+        "northwind-adjuster-desk-procedure-oc3.txt"
+      ],
+      "evidence_document_count": 2
+    },
+    {
+      "name": "Loss_Category",
+      "alternative_names": [
+        "Settlement line"
+      ],
+      "parent_type": null,
+      "description": "A row of the Endorsement C-14 settlement schedule: a loss category with its standard settlement and cap.",
+      "display_label": "Loss Category",
+      "plain_description": "One line of the settlement schedule.",
+      "example_snippet": "Total loss (shipment not delivered) | Declared value | 50,000",
+      "domain": "insurance",
+      "properties": [
+        {
+          "name": "name",
+          "data_type": "string",
+          "description": "Loss category name",
+          "required": true,
+          "answerable_cqs": []
+        },
+        {
+          "name": "standard_settlement",
+          "data_type": "string",
+          "description": "Standard settlement rule",
+          "required": false,
+          "answerable_cqs": []
+        },
+        {
+          "name": "cap_per_shipment",
+          "data_type": "string",
+          "description": "Cap per shipment",
+          "required": false,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "llm_authored",
+      "confidence": 0.85,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_type_name": null,
+      "seed_alignment": null,
+      "answerable_cqs": [
+        "Which role must record a rationale before a payment above the settlement schedule?",
+        "Within how many hours must notice of loss arrive for an overnight courier claim?",
+        "Which endorsement defines the settlement schedule for overnight courier claims, and what are its loss categories and caps?"
+      ],
+      "evidence_documents": [
+        "northwind-endorsement-c14-settlement-schedule.txt"
+      ],
+      "evidence_document_count": 1
+    }
+  ],
+  "relationships": [
+    {
+      "name": "describes",
+      "alternative_names": [
+        "defines"
+      ],
+      "source_type": "Claims_Document",
+      "target_type": "Claims_Process",
+      "description": "A document defines or restates a claims process.",
+      "display_label": "describes",
+      "plain_description": "This document sets out that process.",
+      "example_snippet": "This memo restates the exception process",
+      "richness_tier": "simple",
+      "richness_rationale": "No edge attributes needed.",
+      "edge_properties": [],
+      "provenance": "llm_authored",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "Which endorsement defines the settlement schedule for overnight courier claims, and what are its loss categories and caps?",
+        "Which documents describe or govern the overnight courier exception process, and how do they reference each other?"
+      ]
+    },
+    {
+      "name": "references",
+      "alternative_names": [
+        "cross-references"
+      ],
+      "source_type": "Claims_Document",
+      "target_type": "Claims_Document",
+      "description": "One governing document refers to another.",
+      "display_label": "references",
+      "plain_description": "This document points to that one.",
+      "example_snippet": "Related documents: Claims Operations exception memo",
+      "richness_tier": "simple",
+      "richness_rationale": "Plain link.",
+      "edge_properties": [],
+      "provenance": "llm_authored",
+      "confidence": 0.85,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "Which documents describe or govern the overnight courier exception process, and how do they reference each other?"
+      ]
+    },
+    {
+      "name": "requires_condition",
+      "alternative_names": [
+        "has condition"
+      ],
+      "source_type": "Claims_Process",
+      "target_type": "Exception_Condition",
+      "description": "The exception process requires this condition to hold.",
+      "display_label": "requires condition",
+      "plain_description": "This route needs that requirement.",
+      "example_snippet": "only when all of the following are true",
+      "richness_tier": "simple",
+      "richness_rationale": "Conjunction is a property of the condition.",
+      "edge_properties": [],
+      "provenance": "llm_authored",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "What is the exception process for overnight courier claims?",
+        "Which conditions must all be true before an overnight courier claim may leave the standard path?",
+        "What forms of evidence are acceptable, and which are explicitly not acceptable, for a courier claim exception?",
+        "Which documents describe or govern the overnight courier exception process, and how do they reference each other?",
+        "Is there any goodwill exception for overnight courier claims?"
+      ]
+    },
+    {
+      "name": "requires_approval_from",
+      "alternative_names": [
+        "approved by"
+      ],
+      "source_type": "Claims_Process",
+      "target_type": "Role",
+      "description": "The process needs a rationale/approval recorded by this role.",
+      "display_label": "requires approval from",
+      "plain_description": "That role must sign off.",
+      "example_snippet": "A supervisor (role: Claims Supervisor) records a short rationale",
+      "richness_tier": "attributed",
+      "richness_rationale": "Carries what must be recorded and when.",
+      "edge_properties": [
+        {
+          "name": "must_record",
+          "data_type": "string",
+          "description": "What the role records (e.g. 'short rationale in the claim file')",
+          "required": false,
+          "answerable_cqs": []
+        },
+        {
+          "name": "timing",
+          "data_type": "string",
+          "description": "When (e.g. 'before any payment above the schedule')",
+          "required": false,
+          "answerable_cqs": []
+        }
+      ],
+      "provenance": "llm_authored",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "What is the exception process for overnight courier claims?",
+        "Which conditions must all be true before an overnight courier claim may leave the standard path?",
+        "Which role must record a rationale before a payment above the settlement schedule?",
+        "Within how many hours must notice of loss arrive for an overnight courier claim?"
+      ]
+    },
+    {
+      "name": "accepts_evidence",
+      "alternative_names": [
+        "allows evidence"
+      ],
+      "source_type": "Claims_Process",
+      "target_type": "Evidence_Type",
+      "description": "The process accepts this evidence type as valid proof.",
+      "display_label": "accepts evidence",
+      "plain_description": "This proof counts for that route.",
+      "example_snippet": "Acceptable evidence: carrier delay certificate",
+      "richness_tier": "simple",
+      "richness_rationale": "Acceptability lives on the Evidence_Type.",
+      "edge_properties": [],
+      "provenance": "llm_authored",
+      "confidence": 0.8,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "What forms of evidence are acceptable, and which are explicitly not acceptable, for a courier claim exception?"
+      ]
+    },
+    {
+      "name": "has_loss_category",
+      "alternative_names": [
+        "schedule line"
+      ],
+      "source_type": "Claims_Document",
+      "target_type": "Loss_Category",
+      "description": "An endorsement's settlement schedule contains this loss category.",
+      "display_label": "has loss category",
+      "plain_description": "This endorsement lists that settlement line.",
+      "example_snippet": "Delay beyond the delivery window (no damage) | 25% of declared value",
+      "richness_tier": "simple",
+      "richness_rationale": "Amounts live on the Loss_Category.",
+      "edge_properties": [],
+      "provenance": "llm_authored",
+      "confidence": 0.85,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "Which role must record a rationale before a payment above the settlement schedule?",
+        "Within how many hours must notice of loss arrive for an overnight courier claim?",
+        "Which endorsement defines the settlement schedule for overnight courier claims, and what are its loss categories and caps?",
+        "Is there any goodwill exception for overnight courier claims?"
+      ]
+    },
+    {
+      "name": "owned_by",
+      "alternative_names": [
+        "authored by"
+      ],
+      "source_type": "Claims_Document",
+      "target_type": "Person",
+      "description": "The person who owns/authored the document.",
+      "display_label": "owned by",
+      "plain_description": "Who is responsible for this document.",
+      "example_snippet": "Owner: Claims Operations (Head of Claims: Priya Nandakumar)",
+      "richness_tier": "simple",
+      "richness_rationale": "Plain link.",
+      "edge_properties": [],
+      "provenance": "llm_authored",
+      "confidence": 0.85,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "Who owns the adjuster desk procedure and the exception memo?",
+        "Is there any goodwill exception for overnight courier claims?"
+      ]
+    },
+    {
+      "name": "holds_role",
+      "alternative_names": [
+        "has role"
+      ],
+      "source_type": "Person",
+      "target_type": "Role",
+      "description": "A person holds a role.",
+      "display_label": "holds role",
+      "plain_description": "This person has that job.",
+      "example_snippet": "Priya Nandakumar, Head of Claims",
+      "richness_tier": "simple",
+      "richness_rationale": "Plain link.",
+      "edge_properties": [],
+      "provenance": "seed_aligned",
+      "confidence": 0.9,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": "schema_org",
+      "seed_rel_name": "hasOccupation",
+      "answerable_cqs": [
+        "Who owns the adjuster desk procedure and the exception memo?"
+      ]
+    },
+    {
+      "name": "rejects_evidence",
+      "alternative_names": [
+        "does not accept"
+      ],
+      "source_type": "Claims_Process",
+      "target_type": "Evidence_Type",
+      "description": "The process explicitly does NOT accept this evidence type (e.g. chat screenshots).",
+      "display_label": "rejects evidence",
+      "plain_description": "This proof does not count for that route.",
+      "example_snippet": "Chat screenshots are not evidence.",
+      "richness_tier": "simple",
+      "richness_rationale": "Plain negative link; keeps accepted vs rejected unambiguous in the graph.",
+      "edge_properties": [],
+      "provenance": "llm_authored",
+      "confidence": 0.85,
+      "source_passes": [
+        "combined"
+      ],
+      "seed_source": null,
+      "seed_rel_name": null,
+      "answerable_cqs": [
+        "What forms of evidence are acceptable, and which are explicitly not acceptable, for a courier claim exception?"
+      ]
+    }
+  ],
+  "coverage_matrix": [],
+  "provenance_summary": {
+    "llm_authored": 14,
+    "seed_aligned": 2
+  },
+  "quality_metrics": {},
+  "gap_report": {},
+  "extraction_run_id": "claude-authored",
+  "industry_profile": "insurance",
+  "created_at": "2026-08-17T00:00:00Z"
+}

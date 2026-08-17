@@ -37,7 +37,10 @@ from _common import add_grace_to_path, route_logs_to_stderr  # noqa: E402
 import cypher_exec  # noqa: E402
 
 API_DEFAULT = "http://127.0.0.1:8000"
-CLAUDE_MODEL = "claude-haiku-4-5-20251001"  # heat-free (cloud); never the local llama
+# GrACE-Demo: the text-to-Cypher model is whatever cloud vendor the student
+# configured in config/discovery.yaml (Anthropic / OpenAI-compatible). We go through
+# get_provider() so the demo is vendor-agnostic; a local Ollama provider is allowed
+# but warned about (heat) — the in-loop `--cypher` path needs no API call at all.
 
 # --- query classification ------------------------------------------------------
 _STRUCTURAL_CUES = (
@@ -104,6 +107,27 @@ def _extract_cypher(text: str) -> str:
     # If the model still added prose, keep from the first MATCH/CALL/WITH.
     m = re.search(r"(MATCH|CALL|WITH|UNWIND)\b", t, re.I)
     return (t[m.start():] if m else t).strip()
+
+
+def _configured_provider():
+    """Return the vendor configured in config/discovery.yaml (via get_provider()).
+
+    Vendor-agnostic: Anthropic, OpenAI-compatible (ChatGPT / DeepSeek / Groq /
+    Together / xAI ...) or Ollama. Returns None (after printing why) if the
+    provider cannot be built, e.g. missing LLM_API_KEY.
+    """
+    try:
+        from src.shared.llm_provider import get_provider
+
+        provider = get_provider()
+    except Exception as e:  # noqa: BLE001
+        print(f"  configured LLM provider unavailable ({str(e)[:100]}). "
+              f"Use --cypher '<agent-generated>' (in-loop) or --no-llm (print prompt).")
+        return None
+    if type(provider).__name__ == "OllamaProvider":
+        print("  note: configured provider is local Ollama — this will load a local model.",
+              file=sys.stderr)
+    return provider
 
 
 async def _generate_cypher(provider, schema_text: str, question: str,
@@ -201,7 +225,7 @@ async def _run(args) -> None:
             cypher = args.cypher
             out = await cypher_exec.validate_and_run(client, cypher, schema)
             await client.aclose()
-            print("\n--- supplied cypher (Claude-in-the-loop) ---")
+            print("\n--- supplied cypher (agent-in-the-loop) ---")
             print(f"  {cypher}")
             if out["lint"]:
                 print(f"  lint: {out['lint']}")
@@ -212,13 +236,15 @@ async def _run(args) -> None:
             print("\nGROUNDING: cypher path is grounded by construction (rows ARE graph rows).")
             return
         else:
-            from src.shared.anthropic_provider import AnthropicProvider
-            provider = AnthropicProvider(api_key=key, model=CLAUDE_MODEL)
+            provider = _configured_provider()
+            if provider is None:
+                await client.aclose()
+                return
             try:
                 cypher = await _generate_cypher(provider, schema_text, args.query)
-            except ValueError as e:  # invalid/expired key (401) — degrade cleanly
-                print(f"  Claude API unavailable ({str(e)[:60]}). "
-                      f"Use --cypher '<claude-generated>' (in-loop) or --no-llm (print prompt).")
+            except Exception as e:  # invalid/expired key (401), network — degrade cleanly
+                print(f"  LLM API unavailable ({str(e)[:80]}). "
+                      f"Use --cypher '<agent-generated>' (in-loop) or --no-llm (print prompt).")
                 await client.aclose()
                 return
             out = await cypher_exec.validate_and_run(client, cypher, schema)

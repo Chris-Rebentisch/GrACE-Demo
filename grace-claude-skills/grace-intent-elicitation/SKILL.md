@@ -24,7 +24,8 @@ should be made. Every step below serves that one sentence.
 
 This is the missing link in the KG industry: graphs capture facts; they cannot capture
 the why. The why lives only in a human's head. You (Claude) are the facilitator that draws
-it out and binds it to the facts.
+it out and binds it to the facts. Any operating LLM (Claude, ChatGPT, Gemini,
+Cursor, …) can run this skill — nothing here is vendor-specific.
 
 ## Role
 You are the **elicitation facilitator, not the decider.** You run GrACE's established
@@ -40,7 +41,9 @@ deterministic write tool. **The human is the only source of intent; you never in
   one captures intent (why was it decided this way?). Run alongside or after it.
 - **Domain-agnostic:** legal, finance, projects — same 3 types + 5 edges. Authored once.
 
-## The model you are writing (ontology v#9 — already ratified)
+## The model you are writing (the intent meta-layer)
+`grace-auto-accept` merges these types + edges into the active ontology (module
+`intent`) by default, so they already exist in ArcadeDB after Step 4.
 Full design + every decision: `references/intent-layer-design.md`. Summary:
 
 | You capture | Becomes | Key point |
@@ -61,24 +64,27 @@ a specific principle is a child of a general one; an agent can fall back to the 
 Full method + the 6-decision evidence: `references/intent-elicitation-science.md`. The four
 rules that are load-bearing:
 
-1. **Anti-anchoring is everything (D226 / Buçinca 2021).** Reviewers mirror a proposed answer
+1. **Anti-anchoring is everything (Buçinca et al. 2021).** Reviewers mirror a proposed answer
    60–80% of the time. **NEVER propose the why.** Lead with the verbatim fact, then ask open.
    If you say "Aimmune bears all the cost — was that to protect Xencor?", you get a confabulated
    mirror. Evidence-first, give the human nothing to mirror. Their answer IS the rationale.
 2. **Surgical laddering.** An expert self-ladders to root. Don't ask "why" five times — find
    the ONE rung they left implicit and probe exactly that. (Their answer to that rung is often
    the counterfactual or the leverage.)
-3. **Certainty bands, never numbers** (D120/D217): `high | medium | low | insufficient_evidence`.
+3. **Certainty bands, never numbers**: `high | medium | low | insufficient_evidence`.
    Plus a `resolver` (what would raise the band) and any rival hypothesis. `insufficient_evidence`
    and `medium` are honest, valuable answers — they mark inference vs. knowledge.
-4. **Plain language** (D522). Talk about decisions, parties, terms, tradeoffs — never "vertex",
+4. **Plain language.** Talk about decisions, parties, terms, tradeoffs — never "vertex",
    "epistemic_status", "ontology".
 
 ## Session flow (step by step)
 1. **prepare** — pick a handful of high-stakes, intent-rich facts from the seeded graph
-   (`scripts/intent_query.py --facts <agreement>` or the graph read tools). High-stakes =
-   a decision where the *why* is expensive to lose: risk allocation, governing law, an unusual
-   structure, a board seat, a clawback.
+   (`scripts/intent_query.py --facts '*'` lists every fact vertex, most-connected first;
+   `--facts <name substring>` narrows; `--fact <gid-prefix>` shows one verbatim). High-stakes =
+   a decision where the *why* is expensive to lose: an exception rule, an approval gate, risk
+   allocation, governing law, an unusual structure, a threshold or deadline.
+   *Sample corpus first fact:* the Northwind exception process (three conditions AND a
+   supervisor rationale before paying above schedule) — ask why it is built that way.
 2. **open** — tell the human what you're doing: *"the graph knows what these contracts say;
    I want to capture why they were built this way, so it can answer future decisions. I'll
    show you a fact and ask why — I won't guess the answer."*
@@ -122,8 +128,10 @@ of the structure is a stronger check than a second LLM, and it costs no extra mo
 a library, not an agent.
 
 ## Hard constraints
-- **Heat:** only `nomic-embed-text` loads (for principle embeddings). NEVER `grace_answer` /
-  `gpt-oss` / `llama3.3:70b`. Extraction uses read tools + Claude, not the regeneration model.
+- **No local model.** Principle embeddings are written only when an embeddings vendor is
+  configured (`GRACE_EMBED_PROVIDER`); with a chat-only key principles are stored without
+  vectors and `--similar` / `--ask` fall back to keyword matching. Elicitation itself is your
+  own conversation with the human — no extra model call.
 - **Never invent intent.** If the human doesn't know, the band is `insufficient_evidence` — that
   honest gap is itself durable context. Do not fill it with a plausible guess.
 - **The fence is non-negotiable.** A rejected alternative is never written as a real term. The
@@ -134,7 +142,7 @@ a library, not an agent.
 
 ## Tools
 - **Read / extract:** `scripts/intent_query.py`:
-  - `--facts <agreement> [--full]` — the elicitation queue (`--full` = verbatim clauses + full grace_ids);
+  - `--facts '*'|<name substring> [--full]` — the elicitation queue (`--full` = full grace_ids);
   - `--fact <gid>` — one fact's verbatim text + neighborhood + any captured intent (use at elicitation time);
   - `--similar "<statement>" --applies-when "<scope>"` — tiered canonicalization (duplicate / strong-overlap /
     **related → consider `specializes`**); the human decides reuse vs specialize vs new;
@@ -143,5 +151,8 @@ a library, not an agent.
   decision; a **session-bundle** (`{"decisions": [ ... ]}`) writes several in one run. Bundle sections:
   `principles`, `rationale` (+ `controlling_reason`/`subordinate_reasons`), `counterfactuals`,
   `mandatory_provisions`, `principle_explains`, `traded_for`, `depends_on`, `specializes`.
-- **Validate:** `scripts/intent_golden_gate.py` (8 pass/fail invariants across the intent layer).
+- **Example bundle:** `data/demo-corpus/samples/intent_bundle_example.json` (placeholders for the
+  fact grace_ids — resolve them with `--facts` first).
+- **Validate (optional, corpus-specific):** `scripts/intent_golden_gate.py` was written for a legal
+  validation corpus; on the demo corpus only its generic invariants are meaningful.
 - **Science / decisions:** `references/intent-elicitation-science.md`, `references/intent-layer-design.md`.

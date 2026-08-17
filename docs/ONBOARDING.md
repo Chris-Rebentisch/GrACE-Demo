@@ -1,57 +1,88 @@
-# GrACE-Demo — first run (document → graph → ask)
+# GrACE-Demo — first run (documents → graph → why → answers)
 
-Do this **after** [INSTALL.md](../INSTALL.md) and a green `scripts/smoke-demo.sh`.
-
-Agents: also read [LLM_OPERATOR.md](LLM_OPERATOR.md).
+**Agents:** this is your step list after Session 0 (student's key + vendor set, stack up,
+`scripts/smoke-demo.sh` green). Read [LLM_OPERATOR.md](LLM_OPERATOR.md) first. Each step
+below points at a skill in `grace-claude-skills/` whose `SKILL.md` has the exact
+commands and file shapes.
 
 ## Goal
 
-Load the synthetic sample corpus, auto-accept an ontology, extract, ask one question in Chat that cites a source.
+Load the sample corpus (or the human's files), author and auto-accept an ontology,
+extract facts, **interview the human for intent (or they skip)**, then answer a question
+from the graph with a certainty band and sources.
 
 ## Sample corpus
 
-Files live in `data/demo-corpus/` (fictional insurance memo + a sample `.eml`). They are **not** customer data.
+`data/demo-corpus/` — a fictional insurance mini-world (Northwind Specialty Cargo):
 
-## Path A — LLM-operated (recommended)
+| Path | What |
+|---|---|
+| `documents/northwind-overnight-exception-memo.txt` | the exception process for overnight courier claims |
+| `documents/northwind-endorsement-c14-settlement-schedule.txt` | the settlement schedule the memo refers to |
+| `documents/northwind-adjuster-desk-procedure-oc3.txt` | roles and the standard-path steps |
+| `email/sample-exception-followup.eml` | a follow-up email (optional email path) |
+| `samples/` | reference outputs: `cqs.json`, `seed_schema.json`, `extraction_*.json`, `intent_bundle_example.json` |
 
-From the repo root, with API + frontend running:
+No real people, policies, or claims.
+
+## Fast path first (no LLM call)
 
 ```bash
-export GRACE_ROOT="$PWD"
+bash scripts/demo-fastpath.sh
+```
+Runs steps 0–6 below with the shipped samples and asks the graph a question. If it
+passes, the stack is fine and any later problem is in the authoring, not the plumbing.
+(It ratifies a sample ontology; your own auto-accept in step 4 simply becomes the next
+active version.)
 
-# Fast path (no LLM): ratify the shipped sample ontology + ArcadeDB DDL
-.venv/bin/python "$GRACE_ROOT/grace-claude-skills/scripts/auto_accept.py" \
-  --in "$GRACE_ROOT/data/demo-corpus/seed_schema.json"
+## The loop (you do the reasoning)
 
-# Full path: export corpus, author CQs, propose schema (see grace-claude-skills/),
-# then auto-accept your proposal instead of the sample seed.
+```bash
+export GRACE_ROOT="$PWD"; P=.venv/bin/python; S=grace-claude-skills/scripts
 ```
 
-Then open http://localhost:3000/chat and ask: **What is the exception process for overnight courier claims?**
+| # | Do | Skill / command |
+|---|---|---|
+| 0 | Process documents into Postgres (Docling; no LLM) | `$P -m src.discovery.batch_runner --source-dir data/demo-corpus/documents` |
+| 1 | Export the text and **read it** | `$P $S/export_corpus.py` → `workspace/corpus/insurance.md` (**grace-corpus-export**) |
+| 2 | Author competency questions → `workspace/cqs.json`, import | `$P $S/import_cqs.py --in workspace/cqs.json --domain insurance` (**grace-cq-authoring**) |
+| 3 | Author the ontology → `workspace/seed_schema.json`, map coverage | `$P $S/map_coverage.py --in workspace/seed_schema.json --domain insurance` (**grace-ontology-proposal**) |
+| 4 | **Auto-accept** (ratify + ArcadeDB DDL + intent meta-layer) | `$P $S/auto_accept.py --in workspace/seed_schema.json` (**grace-auto-accept**) |
+| 5 | *(optional)* detail properties, re-accept | **grace-property-detailing** |
+| 6 | Extract each document → `workspace/extraction_<doc>.json`, import | `$P $S/import_extraction.py --in workspace/extraction_<doc>.json --doc-file <doc>.txt --module insurance` (**grace-graph-extraction**) |
+| 7 | **Speak first:** offer intent Q&A; interview or accept the skip | `$P $S/intent_query.py --facts '*'` → `--fact <gid>` → `intent_apply.py --bundle …` (**grace-intent-elicitation**) |
+| ask | Answer from the graph | `POST /api/retrieval/query` / `POST /api/regeneration/query` |
 
-You should see a certainty band and a source link into the sample memo.
+Prove the graph can answer, e.g.:
 
-## Path B — UI-operated
+**What is the exception process for overnight courier claims?**
 
-1. **Sources** — include `data/demo-corpus/`.
-2. Run document processing from Onboarding / Sources (Docling for binaries; `.txt` is read directly).
-3. Have your LLM (ChatGPT/Claude/Cursor with [LLM_OPERATOR.md](LLM_OPERATOR.md)) propose + auto-accept the ontology. Do **not** use Guided Review.
-4. Extract.
-5. **Chat** — same question as Path A.
-6. **Inspector** — confirm retrieval used the sample document.
+The answer should be grounded in the memo (three conditions AND a supervisor rationale;
+no goodwill exception), carry a certainty band, and name the source document.
 
-## Email (optional, after Path A works)
+```bash
+curl -s -X POST http://localhost:8000/api/retrieval/query -H 'Content-Type: application/json' \
+  -H 'X-Graph-Scope: all' \
+  -d '{"query_text":"What is the exception process for overnight courier claims?","top_k":8}'
+```
 
-Connect Gmail, IMAP, or Exchange in **Ingestion** (readonly). Or drop extra `.eml` files next to the sample. Thin triage + thread reconstruction apply. Skip live mail if OAuth is not ready — the file corpus is enough to demo.
+## Email (optional)
 
-## Intent (optional)
+After the file corpus works: `.eml` files (`data/demo-corpus/email/`), or Gmail / IMAP /
+Exchange (read-only, opt-in). Commands are in LLM_OPERATOR.md ("Email"). Skip live mail
+if OAuth is not ready.
 
-After facts exist, run `grace-intent-elicitation`: interview the human for *why*, write it to the graph, then ask Chat a “why did we decide X?” question.
+## The human's own documents
+
+Point step 0 at their folder (`--source-dir /path/to/their/docs`; PDF, DOCX, XLSX, PPTX,
+TXT, MD, HTML, CSV, images). Then repeat steps 1–7 — new domain, new CQs, new ontology
+(auto-accept makes it the next active version), new extractions.
 
 ## You are not done until
 
-- [ ] `GET /api/health` is ok
-- [ ] `GET /api/graph/health` is ok
+- [ ] `GET /api/health` and `GET /api/graph/health` are ok
 - [ ] `GET /api/ontology/active` returns a schema (after auto-accept)
-- [ ] Chat answers the courier-exception question with a citation
-- [ ] No GOLD/customer files were used
+- [ ] Extraction has run for every document; `GET /api/graph/entities` shows them
+- [ ] You offered intent Q&A (and either wrote a confirmed bundle, or they skipped)
+- [ ] You answered the courier-exception question from the graph with band + source
+- [ ] No keys or private documents were committed

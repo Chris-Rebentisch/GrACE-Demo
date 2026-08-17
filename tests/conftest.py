@@ -79,6 +79,19 @@ def _isolate_test_database_url() -> None:
 _isolate_test_database_url()
 
 
+# ---------------------------------------------------------------------------
+# Embeddings-provider isolation (GrACE-Demo). The operator's `.env` may select
+# cloud embeddings or disable them entirely (GRACE_EMBED_PROVIDER=auto/none),
+# and some pytest plugins export `.env` into os.environ at import. Unit tests
+# mock the Ollama / OpenAI HTTP calls and expect the legacy URL-inference path,
+# so neutralise the operator's choice here. Tests that exercise the switch set
+# it explicitly with monkeypatch.
+# ---------------------------------------------------------------------------
+for _k in ("GRACE_EMBED_PROVIDER", "GRACE_EMBED_API_KEY", "GRACE_EMBED_BASE_URL",
+           "GRACE_EMBED_MODEL", "GRACE_EMBED_DIMENSIONS", "GRACE_EMBED_TIMEOUT_SECONDS"):
+    os.environ.pop(_k, None)
+
+
 def _isolate_test_arcade_database() -> None:
     """Mirror the Postgres isolation for ArcadeDB (F-022 companion).
 

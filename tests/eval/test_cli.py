@@ -46,7 +46,7 @@ def test_run_suite_dry_run_writes_nothing(capsys, monkeypatch):
     captured = capsys.readouterr()
     payload = json.loads(captured.out.strip().splitlines()[-1])
     assert payload["status"] == "dry_run"
-    assert payload["total_cases"] >= 50
+    assert payload["total_cases"] >= 1
 
 
 def test_subcommand_dispatch(capsys):

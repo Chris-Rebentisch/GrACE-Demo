@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""STEP 6 (persist, no LLM) — Write a Claude-authored graph extraction into ArcadeDB,
+"""STEP 6 (persist, no chat LLM) — Write an LLM-authored graph extraction into ArcadeDB,
 with three-layer entity resolution so the same real-world entity converges to ONE vertex
 across many documents / sessions (built for multi-shot extraction, not one-shot).
+
+Embeddings are OPTIONAL (GrACE-Demo cloud-only default). When no embeddings vendor is
+configured (GRACE_EMBED_PROVIDER resolves to "none") Layer 3 ANN is skipped and vertices
+are written without `_embedding`; Layers 1 + 2 (registry + exact/alias) still dedup.
 
 Resolution order per entity (most specific first):
   Layer 1  registry      — workspace/entity_registry.json: canonical (type,name)->grace_id
@@ -16,7 +20,7 @@ Resolution order per entity (most specific first):
 After resolve: new entities are inserted WITH their `_embedding` (so future docs can ANN
 to them), every surface name is recorded as an alias (Layer 2a), and the registry updated.
 
-Reuses grace: ArcadeClient, append_entity_alias, embed_texts (nomic-embed — light, no heat).
+Reuses grace: ArcadeClient, append_entity_alias, embed_texts (provider-aware).
 
 Usage:
   python3 import_extraction.py --in ./workspace/extraction_<doc>.json --doc-id <UUID> --module legal
@@ -36,7 +40,24 @@ import urllib.request
 from pathlib import Path
 from uuid import uuid4
 
-from _common import add_grace_to_path
+from _common import add_grace_to_path, get_session, route_logs_to_stderr
+
+
+def _resolve_doc_id(grace_root, file_name: str) -> str:
+    """Look up processed_documents.id by file name (exact, then basename match)."""
+    from pathlib import PurePath
+
+    db = get_session(grace_root)
+    from src.discovery.database import ProcessedDocumentRow  # noqa: E402
+
+    base = PurePath(file_name).name
+    row = (db.query(ProcessedDocumentRow)
+           .filter(ProcessedDocumentRow.file_name == base).first())
+    if row is None:
+        rows = db.query(ProcessedDocumentRow).all()
+        names = sorted(r.file_name for r in rows)
+        raise SystemExit(f"[extract] no processed document named {base!r}. Known: {names[:20]}")
+    return str(row.id)
 
 DEFAULT_REGISTRY = "workspace/entity_registry.json"
 
@@ -193,7 +214,7 @@ async def _post_insert(entities, vecs, resolution):
             # the last surface form and can cause spurious re-merges (e.g. a canonical
             # ending up with sim 1.00 to a different variant). Matched entities keep their
             # canonical embedding. SQL UPDATE — grace's path; OpenCypher can't serialize lists.
-            if resolution[i].get("created"):
+            if resolution[i].get("created") and vecs[i]:
                 lit = "[" + ",".join(str(float(v)) for v in vecs[i]) + "]"
                 await client.execute_sql(
                     f"UPDATE {e['entity_type']} SET _embedding = {lit} WHERE grace_id = '{gid}'")
@@ -217,10 +238,13 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--grace-root", default=None)
     ap.add_argument("--in", dest="infile", required=True)
-    ap.add_argument("--doc-id", default=None)
+    ap.add_argument("--doc-id", default=None, help="processed_documents.id (UUID) this extraction came from")
+    ap.add_argument("--doc-file", default=None,
+                    help="Alternative to --doc-id: the source file name (processed_documents.file_name); resolved via the DB")
     ap.add_argument("--module", default=None)
     ap.add_argument("--api-base", default="http://127.0.0.1:8000")
-    ap.add_argument("--ollama-url", default="http://localhost:11434")
+    ap.add_argument("--ollama-url", default="http://localhost:11434",
+                    help="Embedding base URL when GRACE_EMBED_PROVIDER=ollama (ignored for cloud/none)")
     ap.add_argument("--admin-key", default=None)
     ap.add_argument("--er-threshold", type=float, default=0.90,
                     help="Default ANN merge threshold for types NOT in TYPE_MERGE_THRESHOLDS (per-type overrides apply first)")
@@ -233,7 +257,14 @@ def main() -> None:
     args = ap.parse_args()
 
     add_grace_to_path(args.grace_root)
-    from src.shared.embeddings import embed_texts  # noqa: E402
+    route_logs_to_stderr(quiet=True)
+    from src.shared.embeddings import embed_texts, embeddings_enabled  # noqa: E402
+
+    if args.doc_file and not args.doc_id:
+        args.doc_id = _resolve_doc_id(args.grace_root, args.doc_file)
+        print(f"[extract] resolved --doc-file {args.doc_file!r} -> doc-id {args.doc_id}")
+    if not args.doc_id:
+        print("[extract] WARN no --doc-id/--doc-file given; vertices will carry no source_document_id")
 
     payload = json.loads(Path(args.infile).read_text(encoding="utf-8"))
     entities = payload.get("entities", [])
@@ -244,15 +275,38 @@ def main() -> None:
 
     if not entities:
         raise SystemExit("[extract] no entities to write.")
+    for i, e in enumerate(entities):
+        for key in ("entity_type", "name"):
+            if not e.get(key):
+                raise SystemExit(f"[extract] entities[{i}] missing required field {key!r}")
 
-    # Embed entity names once (nomic-embed, light).
+    # Embed entity names once (only when an embeddings vendor is configured).
     texts = [e["name"] for e in entities]
-    vecs = asyncio.run(embed_texts(texts, args.ollama_url))
+    vecs: list = [None] * len(entities)
+    if embeddings_enabled(args.ollama_url) and not args.no_resolve:
+        try:
+            vecs = asyncio.run(embed_texts(texts, args.ollama_url))
+        except Exception as exc:  # noqa: BLE001 — degrade to exact/alias resolution
+            print(f"[extract] WARN embeddings failed ({type(exc).__name__}: {exc}); "
+                  f"continuing without ANN resolution (registry + exact/alias only)")
+            vecs = [None] * len(entities)
+            args.no_resolve = True
+    else:
+        if not args.no_resolve:
+            print("[extract] embeddings disabled -> Layer-3 ANN skipped (registry + exact/alias dedup only)")
+        args.no_resolve = True
 
     resolution = asyncio.run(_resolve(entities, vecs, reg, args.er_threshold, args.ann_top_k,
                                       args.no_resolve, args.review_floor))
     pre = [i for i, r in enumerate(resolution) if r["grace_id"]]
-    to_insert = [i for i, r in enumerate(resolution) if not r["grace_id"]]
+    # Exact-name repeats (registry hits) still go through the bulk endpoint: the API's
+    # canonical lookup (case-insensitive name|alias) returns the SAME vertex and
+    # fill-only-merges any properties this document adds (e.g. a richer `steps`
+    # from the memo after a thin mention in a procedure). Only ANN-resolved name
+    # VARIANTS are skipped (re-inserting them under the variant name would create
+    # a duplicate vertex); those get an alias in phase A.5 instead.
+    to_insert = [i for i, r in enumerate(resolution)
+                 if not r["grace_id"] or r["how"] == "registry"]
     reviews = [(entities[i]["name"], resolution[i]["review"]) for i in range(len(entities))
                if resolution[i].get("review")]  # review = (sim, matched_name, type_threshold)
     print(f"[extract] {len(entities)} entities, {len(in_rels)} rels (event={event_id[:8]}, doc={args.doc_id})")
@@ -261,7 +315,7 @@ def main() -> None:
               + "; ".join(f"{entities[i]['name']!r}<-{resolution[i]['how']}" for i in pre))
     else:
         print("[extract] resolved before insert: 0")
-    print(f"[extract] new (to insert): {len(to_insert)}")
+    print(f"[extract] sent to graph (new or exact-name repeat): {len(to_insert)}")
     for nm, (sim, mname, thr) in reviews:
         print(f"[extract] REVIEW-BAND candidate-dup: {nm!r} ~ {mname!r} sim={sim} (< {thr}; NOT merged)")
     # F-007 / ISS-0017: surface merges decided within NEAR_THRESHOLD_MARGIN of threshold.
@@ -295,12 +349,13 @@ def main() -> None:
             raise SystemExit(f"[extract] entity insert failed: HTTP {exc.code} {exc.read().decode()}")
         for k, i in enumerate(to_insert):
             r = (res.get("entity_results") or [])[k]
-            resolution[i]["grace_id"] = r.get("grace_id")
+            resolution[i]["grace_id"] = r.get("grace_id") or resolution[i].get("grace_id")
             matched = r.get("canonical_match")
             resolution[i]["how"] = "exact/alias match" if matched else "inserted"
             resolution[i]["created"] = bool(r.get("created")) and not matched
         cm = sum(1 for i in to_insert if resolution[i]["how"] == "exact/alias match")
-        print(f"[extract] phase A: {len(to_insert)-cm} created, {cm} deduped via grace canonical_lookup (name|alias)")
+        print(f"[extract] phase A: {len(to_insert)-cm} created, {cm} matched existing vertices "
+              f"(case-insensitive name|alias; missing properties filled in)")
 
     # Phase A.5 — embed new vertices + record surface-name aliases.
     asyncio.run(_post_insert(entities, vecs, resolution))

@@ -1,51 +1,54 @@
 ---
 name: grace-corpus-export
 description: >
-  STEP 1 of the Claude-as-LLM onboarding flow. Export GrACE's processed documents
-  into per-domain markdown corpus bundles that Claude can read, using balanced
-  all-document coverage (not top-10). Use this before authoring CQs or proposing an
-  ontology when you want Claude — not local gpt-oss — to do the reasoning. No Ollama,
-  no heat.
+  STEP 1 of the GrACE-Demo produce track. Export the processed documents from
+  Postgres into per-domain markdown bundles that you (the operating LLM — Claude,
+  ChatGPT, Gemini, Cursor, any agent) read before authoring competency questions
+  and the ontology. Balanced all-document coverage. No LLM call, no embeddings.
 ---
 
 # grace-corpus-export
 
 ## Why this exists
-GrACE normally feeds documents to local gpt-oss:120b for CQ generation and schema
-extraction. On a heat-sensitive machine that model overheats the host. This skill
-pulls the already-processed document text out of Postgres so **Claude Desktop** can
-be the reasoning engine instead. This step touches Postgres only — no model runs.
+GrACE stores every processed document's text in Postgres (`processed_documents`).
+This step pulls that text out as readable markdown so **you** can be the reasoning
+engine for the next steps. It touches Postgres only.
 
 ## Preconditions
-- Documents already processed into `processed_documents` (status `COMPLETE`). If not,
-  run document processing first (`/sources` → process, or `batch_runner`). Docling
-  processing is CPU OCR/parse, not gpt-oss — acceptable.
-- The grace repo at `~/grace` with its `.venv`.
+- The API stack is installed (`INSTALL.md`) and the documents were processed:
+  ```bash
+  cd "$GRACE_ROOT"
+  .venv/bin/python -m src.discovery.batch_runner --source-dir data/demo-corpus/documents
+  # or --source-dir <the human's folder of .pdf/.docx/.txt/.md/...>
+  ```
+  (Docling parse/OCR on CPU — no LLM.) Files land as `status=COMPLETE` rows.
+- `GRACE_ROOT` = the checkout root (`export GRACE_ROOT="$PWD"` from the repo). Every
+  helper script also auto-detects the checkout it lives in, so the export is only
+  a convenience.
 
 ## Do this
 ```bash
-cd ~/grace
-.venv/bin/python ~/grace-claude-skills/scripts/export_corpus.py
+cd "$GRACE_ROOT"
+.venv/bin/python grace-claude-skills/scripts/export_corpus.py
 # scoped:
-.venv/bin/python ~/grace-claude-skills/scripts/export_corpus.py --domain legal --domain insurance
+.venv/bin/python grace-claude-skills/scripts/export_corpus.py --domain insurance --domain legal
 # tighter budget if a domain is huge:
-.venv/bin/python ~/grace-claude-skills/scripts/export_corpus.py --max-chars 120000
+.venv/bin/python grace-claude-skills/scripts/export_corpus.py --max-chars 120000
 ```
-Output lands in `~/grace/workspace/corpus/`:
+Output lands in `workspace/corpus/` (gitignored):
 - `<domain>.md` — one bundle per domain (header lists doc count + filenames).
 - `manifest.json` — domains, doc/char counts, file lists.
 
 ## Coverage guarantee
-The script calls grace's own `build_balanced_document_text`, so **every** document in
-a domain gets an equal slice of the char budget (head/middle/tail sampled for long
-docs). This is the "docs, not top-10" grounding fix from the 2026-06-09 session — it
-prevents short documents from being crowded out by a few long ones.
+The script calls GrACE's own `build_balanced_document_text`, so **every** document in
+a domain gets an equal slice of the character budget (head/middle/tail sampled for
+long docs). Short documents are never crowded out by a few long ones.
 
 ## Hand-off
-Attach/paste the relevant `<domain>.md` files into Claude and invoke
-**grace-cq-authoring** (next step). For ontology proposal you will reuse the same
-bundles plus the canonical CQ set.
+Open and read `workspace/corpus/<domain>.md` (you have file access; there is nothing
+to "attach"), then follow **grace-cq-authoring** (Step 2). You will reuse the same
+bundles for **grace-ontology-proposal** (Step 3).
 
-## Heat / safety
-- Reads Postgres only. Does NOT load gpt-oss. Keep the model unloaded (`ollama stop`).
-- Reads the live `grace` DB (correct — this is real onboarding, not a test).
+## Safety
+- Reads Postgres only. Writes files under `workspace/`.
+- Uses the database named in `.env` (`DATABASE_URL` → `grace_demo`).

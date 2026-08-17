@@ -1,146 +1,99 @@
-# GrACE-Demo — operational notes
+# GrACE-Demo — operational notes for coding agents
 
-**College / classroom cut.** Cloud LLM + cloud embeddings by default. Ollama optional.
-Ontology is auto-accepted. Chat is the human loop.
-
-> **Installing? START HERE → `INSTALL.md`**, then `docs/ONBOARDING.md`.
-> **You are an LLM/agent?** Read `docs/LLM_OPERATOR.md` before doing anything else.
-> **End user?** `docs/USER_MANUAL.md`. **In vs out?** `docs/CHARTER.md`.
-
-Do not follow older CLLM wording below if it conflicts: Ollama is **not** required;
-Grafana is **not** part of first-boot; do not send operators to Guided Review or `/graph`.
-
----
+**Classroom cut of GrACE. The student's cloud LLM (any vendor) is the interface — there is
+no web app.** If you are the agent a student mounted: read
+**[docs/LLM_OPERATOR.md](docs/LLM_OPERATOR.md)** (Session 0 first: their API key, their
+vendor, how to run), then [INSTALL.md](INSTALL.md) and [docs/ONBOARDING.md](docs/ONBOARDING.md).
+Pasteable prompt: [docs/LLM_SYSTEM_PROMPT.md](docs/LLM_SYSTEM_PROMPT.md).
+Scope: [docs/CHARTER.md](docs/CHARTER.md).
 
 ## Tech stack
 
-- **Language:** Python 3.14, managed with **uv** (`pyproject.toml` + `uv.lock`,
-  interpreter pinned in `.python-version`).
-- **API:** FastAPI + Uvicorn on `localhost:8000`.
-- **Frontend:** Next.js 15 (App Router) + TypeScript + Tailwind v4 + shadcn/ui in
-  `frontend/`, on `localhost:3000`.
-- **Relational DB:** PostgreSQL 17 (`grace_demo` in this checkout), SQLAlchemy 2.0, Alembic.
-- **Graph DB:** ArcadeDB ≥26.5.1 via Docker on `localhost:2480` (OpenCypher for
-  DML/DQL, SQL for DDL; native vector index for ANN entity resolution). Data lives
-  in the named Docker volume `grace_arcadedb_data` (portable default; bind-mount a
-  host path via `docker-compose.override.yml` if you want host-visible files).
-  `ArcadeClient()` resolves its target database from `ARCADE_DATABASE` in `.env`
-  (default `grace`) — harnesses point it at `grace_test` for sandbox isolation.
-- **LLM provider abstraction** (`src/shared/llm_provider.py`): selectable in
-  `config/discovery.yaml` under `llm`. This deployment defaults to
-  **AnthropicProvider** (`claude-haiku-4-5-20251001`). Key in `.env` as
-  `LLM_API_KEY`. OllamaProvider and OpenAI-compatible providers are also
-  available. If `discovery.yaml` is missing/unparseable the code falls back to
-  Ollama defaults and logs `discovery_yaml_missing_falling_back_to_ollama` at
-  error level — treat that log as a setup failure. Vision defaults follow the
-  active provider (`llm.vision` block in `discovery.yaml`; Anthropic → the Claude
-  model, Ollama → `qwen2.5-vl:32b`), and UI config saves preserve the `llm.vision`
-  and `llm.num_ctx` blocks.
-- **Embeddings:** cloud OpenAI-compatible by default (`GRACE_EMBED_PROVIDER=openai`,
-  768-dim). **Ollama is optional** (local chat and/or `nomic-embed-text`). Embedding
-  timeout: `GRACE_EMBED_TIMEOUT_SECONDS` (default 120).
-- **Document processing:** Docling (PDF/DOCX/XLSX/PPTX + image OCR). Requires
-  `KMP_DUPLICATE_LIB_OK=TRUE` and `OMP_NUM_THREADS=1` on macOS (in `.env`).
-- **Observability:** in-process OpenTelemetry + `GET /metrics`. Do **not** start
-  Grafana/Prometheus compose for this demo.
-- **MCP server:** `src/mcp_server/` exposes GrACE tools over stdio to Claude Desktop
-  / Claude Code (config sample: `scripts/claude_desktop_config.example.json`).
-- **Schema:** Pydantic v2 is the source of truth → JSON Schema (generated, never
-  hand-written) → optional Turtle/RDF export.
+- **Python 3.14** managed with **uv** (`pyproject.toml` + `uv.lock`; interpreter pinned in
+  `.python-version`). Always use the repo venv: `.venv/bin/python`.
+- **API:** FastAPI + Uvicorn on `localhost:8000` (`uvicorn src.api.main:app --port 8000`,
+  one worker). OpenAPI at `/docs`.
+- **Relational DB:** PostgreSQL 17, database **`grace_demo`**; SQLAlchemy 2.0; Alembic
+  (`alembic upgrade head`).
+- **Graph DB:** ArcadeDB 26.5.1 in Docker (`docker/docker-compose.arcade.yml`, loopback
+  ports 2480/2424, named volume, laptop-sized JVM heap via `ARCADE_HEAP`), database
+  **`grace_demo`** (`ARCADE_DATABASE` in `.env`). OpenCypher for DML/DQL, SQL for DDL and
+  vector search.
+- **LLM provider abstraction** (`src/shared/llm_provider.py`): `config/discovery.yaml`
+  `llm:` block selects `anthropic` | `openai` (any OpenAI-compatible: OpenAI, DeepSeek,
+  Groq, Together, xAI, …) | `ollama`; key in `.env` `LLM_API_KEY`; `airgap_mode: false`
+  for cloud. `POST /api/llm/config/test` proves it; `POST /api/llm/config` persists it.
+- **Embeddings** (`src/shared/embeddings.py`): `GRACE_EMBED_PROVIDER=auto` (default) →
+  OpenAI-compatible `/v1/embeddings` only when `GRACE_EMBED_API_KEY` is set or the chat
+  vendor is real OpenAI; otherwise **none** and every consumer degrades (semantic strategy
+  empty, ANN entity resolution skipped, lexical coverage mapping). `openai` / `ollama` /
+  `none` are explicit overrides.
+- **Document processing:** Docling (PDF/DOCX/XLSX/PPTX/HTML/TXT/MD/CSV + image OCR).
+  `KMP_DUPLICATE_LIB_OK=TRUE` + `OMP_NUM_THREADS=1` in `.env` on macOS.
+- **Retrieval:** BM25 + graph (+ semantic when embeddings are on) fused by RRF; CPU
+  cross-encoder rerank when the model is cached (`bash scripts/prefetch-models.sh`),
+  otherwise fusion order. Indexes rebuilt via `POST /api/retrieval/build-indexes`
+  (`import_extraction.py` does this for you).
+- **Observability:** in-process OpenTelemetry + `GET /metrics`. No Grafana in this demo.
+- **MCP server:** `src/mcp_server/` over stdio (`python -m src.mcp_server`;
+  sample config `scripts/claude_desktop_config.example.json`).
+- **Schema:** Pydantic v2 is the source of truth → JSON Schema (generated) → optional RDF.
 
-## Claude-as-the-LLM skills
+## The produce track (what the operating LLM runs)
 
-`grace-claude-skills/` holds the operator skills and live test harnesses that run
-**Claude** as the knowledge-graph LLM (in Claude Code / Claude Desktop). Install a
-skill by copying its folder to `~/.claude/skills/<name>/`. Highlights:
-
-- `grace-cq-authoring`, `grace-property-detailing`, `grace-ontology-proposal`,
-  `grace-graph-extraction`, `grace-corpus-export`, `grace-auto-accept`,
-  `grace-intent-elicitation` — the discovery → ontology → extraction workflow.
-- `grace-review-protocol`, `grace-testing-protocol` — review and verification.
-- Live harnesses: `grace-retrieval-probe`, `grace-regeneration-probe`,
-  `grace-signal-probe`, `grace-correlation-probe`, `grace-gap-remediation-harness`,
-  `grace-ingestion-harness` — end-to-end checks against a sandbox database.
-
-See `grace-claude-skills/README.md` and `grace-claude-skills/module-test-roadmap.md`.
+`grace-claude-skills/<skill>/SKILL.md` + `grace-claude-skills/scripts/*.py`
+(any agent; see `grace-claude-skills/README.md`):
+process documents (`src.discovery.batch_runner`) → `export_corpus.py` → author CQs →
+`import_cqs.py` → author ontology → `map_coverage.py` → `auto_accept.py` (ratify + ArcadeDB
+DDL + intent meta-layer; **no human schema gate**) → author extractions →
+`import_extraction.py --doc-file …` → **intent Q&A** (`intent_query.py`, `intent_apply.py`;
+human may skip) → answer (`POST /api/retrieval/query`, `POST /api/regeneration/query`).
+Reference outputs: `data/demo-corpus/samples/`. LLM-free proof of the whole loop:
+`bash scripts/demo-fastpath.sh`.
 
 ## How to run things
 
-- **Install deps:** `uv sync --extra dev` then `source .venv/bin/activate`
-- **Start ArcadeDB:** `docker compose -f docker/docker-compose.arcade.yml up -d`
-- **Apply migrations:** `alembic upgrade head` (one-time `createdb grace` first)
-- **Start API:** `uvicorn src.api.main:app --reload --port 8000`
-- **Start frontend:** `cd frontend && npm install && npm run dev`
-- **Observability stack:** `docker compose -f docker/docker-compose.observability.yml up -d`
-- **Run tests:** `python -m pytest tests/ -q` (auto-targets an isolated `grace_test`
-  database — never the live `grace` data; one-time setup:
-  `createdb grace_test && DATABASE_URL=…/grace_test alembic upgrade head`; if the
-  `grace_readonly` role exists on your cluster, also grant it SELECT inside
-  `grace_test` — see `docs/runbooks/pytest-db-safety.md`). Service-dependent tests
-  auto-skip when Ollama / ArcadeDB / nltk / OCR are absent. Known-failure skips
-  live in the `docs/test-suite-allowlist.md` registry (≤5 entries, parsed by
-  `tests/conftest.py`).
-- **MCP server (manual):** `python -m src.mcp_server`
-- **Set the Anthropic key:** `bash scripts/set-api-key.sh` (or edit `.env`)
-
-Full first-run sequence: `docs/GrACE-Onboarding-Setup-Manual.md`.
-
-## User-reported issues (`.issues/` tracker)
-
-Local-first issue log: one markdown file per issue under `.issues/` (YAML
-frontmatter for state), `BUGS.md` at the root is the GENERATED index (never
-hand-edit). CLI: `python3 scripts/issue.py new|list|show|close|push|index` —
-`push` optionally mirrors one issue to GitHub Issues via `gh` (one-way, per
-issue, deliberate). Full workflow: `.issues/README.md`. Agents: when the user
-reports a bug/tweak, file it with `new` (don't just fix silently); check
-`list` for open items before proposing housekeeping; cite `fixes ISS-NNNN`
-in resolving commits.
+- Install: `uv python install 3.14 && uv sync --extra dev && source .venv/bin/activate`
+- Config: `cp .env.example .env` (edit `LLM_API_KEY`, `DATABASE_URL` user); pick the
+  vendor in `config/discovery.yaml`.
+- Postgres: `createdb grace_demo`; ArcadeDB: `docker compose -f docker/docker-compose.arcade.yml up -d`
+  then create database `grace_demo` (INSTALL.md Step 5).
+- Migrate: `alembic upgrade head`. Start: `uvicorn src.api.main:app --port 8000`.
+- Gates: `bash scripts/smoke-demo.sh` (plumbing), `bash scripts/demo-fastpath.sh`
+  (whole loop; `--reset` recreates the demo DBs).
+- Tests (maintainers): `python -m pytest tests/ -q` — auto-redirects to the isolated
+  `grace_demo_test` Postgres DB and `grace_demo_test` ArcadeDB (create both once, see
+  `grace-claude-skills/grace-testing-protocol/SKILL.md`). Never point tests at live data.
+  Known-failure registry: `docs/test-suite-allowlist.md`.
 
 ## Critical rules
 
-- **Secrets never committed.** `LLM_API_KEY` and all credentials live only in local
-  `.env` (gitignored). Never paste real secret values into chat, logs, code, docs,
-  or commits — refer to variable names only.
-- **The human approves the ontology.** The LLM proposes schema and extractions; a
-  human reviews and approves before anything is trusted. High-risk schema changes
-  (hierarchy restructuring, type deprecation, domain/range changes) are always
-  human-reviewed.
-- **Pydantic is the source of truth.** JSON Schema is generated via
-  `model_json_schema()` — never hand-written.
-- **Provenance is mandatory.** Every extracted fact carries temporal validity,
-  confidence, and a source link. Confidence reaches the UI as certainty *bands*
-  (High / Medium / Low / Insufficient), never raw numbers.
-- **Test-DB isolation.** `pytest` auto-redirects to a `grace_test` sibling database;
-  never point the test suite at the live `grace` database.
-- **Long-running pipelines run out-of-process.** Signal/correlation/eval/decay and
-  other batch jobs run via their CLIs (scheduled with cron / launchd), not inside
-  the API process. Sample schedules: `scripts/launchd/`.
-- **Dev credentials are dev-only.** ArcadeDB (`root`/`gracedev`) and Grafana
-  (`admin`/`gracedev`) defaults must be rotated before any non-localhost exposure;
-  the API logs `arcade_default_credentials_in_use` at startup while the default
-  password is active.
-- **Email triage entity types are configurable.** Tier-2 sender lookup and the
-  corroboration scorer read their graph vertex types from
-  `config/triage_rules.yaml` (`tier2.entity_types`) and
-  `config/corroboration_config.yaml` (`sender_entity_types`); the default
-  `["Person", "Organization", "Legal_Entity"]` covers ontologies that model
-  people/orgs as `Legal_Entity` only.
-- **Don't guess.** If a configuration or architectural choice is unclear, stop and
-  ask rather than picking one.
+- **Secrets never committed.** `LLM_API_KEY` and all credentials live only in `.env`
+  (gitignored). Never paste real secret values into chat, logs, code, docs, or commits.
+- **The LLM proposes the ontology; auto-accept activates it.** Humans contribute *why*
+  (intent Q&A), not schema click-through. Never send the human to a web UI — none exists.
+- **Provenance is mandatory.** Every extracted fact carries a source, temporal validity,
+  and a certainty band (never raw numbers in what the human sees).
+- **Pydantic is the source of truth.** JSON Schema is generated, never hand-written.
+- **Test-DB isolation.** `pytest` uses the `_test` siblings; never the demo/live data.
+- **Long-running pipelines run out-of-process** (CLIs spawned by routes), never inside
+  the API process.
+- **Dev credentials are dev-only.** ArcadeDB `root`/`gracedev` is for localhost; rotate
+  before any non-localhost exposure (the API warns at startup).
+- **Don't guess.** If a configuration or architectural choice is unclear, stop and ask.
 
 ## Directory layout
 
 ```
-src/                  Backend modules (discovery, ontology, extraction, graph,
-                      retrieval, regeneration, analytics, ingestion, mcp_server,
-                      permissions, federation, api, shared, …)
-frontend/             Next.js web UI
+src/                  Engine (discovery, ontology, extraction, graph, retrieval, regeneration,
+                      ingestion, analytics, mcp_server, shared, api, …)
+grace-claude-skills/  Skills + helper scripts the operating LLM follows (any vendor)
+data/demo-corpus/     Fictional sample corpus (documents/, email/) + reference samples/
 alembic/              Database migrations
-config/               Module configuration (YAML/JSON)
+config/               YAML/JSON configuration (discovery.yaml holds the llm: block)
+docker/               docker-compose.arcade.yml
+scripts/              smoke-demo.sh, demo-fastpath.sh, prefetch-models.sh, set-api-key.sh, …
 seeds/                Reference ontologies (FIBO, LKIF, PROV-O, Schema.org)
-docker/               Docker Compose (ArcadeDB, observability)
-grace-claude-skills/  Claude-as-the-LLM skills + live test harnesses
-scripts/              Setup, scheduling, and operator utility scripts
 tests/                Test suite (mirrors src/)
-docs/                 Product overview, onboarding manual, operator runbooks
+docs/                 LLM_OPERATOR, LLM_SYSTEM_PROMPT, ONBOARDING, USER_MANUAL, INTENT_QA, CHARTER, GrACE-Product
 ```

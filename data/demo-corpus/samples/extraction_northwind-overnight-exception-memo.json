@@ -1,0 +1,282 @@
+{
+  "entities": [
+    {
+      "name": "Claims exception memo (12 March 2026)",
+      "entity_type": "Claims_Document",
+      "properties": {
+        "name": "Claims exception memo (12 March 2026)",
+        "document_kind": "memo",
+        "effective_date": "2026-03-12"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Endorsement C-14",
+      "entity_type": "Claims_Document",
+      "properties": {
+        "name": "Endorsement C-14",
+        "document_kind": "endorsement"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Standard path",
+      "entity_type": "Claims_Process",
+      "properties": {
+        "name": "Standard path",
+        "process_kind": "standard",
+        "notice_deadline_hours": 48,
+        "steps": "1) notice of loss within 48 hours of the delivery window; 2) adjuster verifies airway bill against declared contents list; 3) settlement per Endorsement C-14 unless an exception applies"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Exception process",
+      "entity_type": "Claims_Process",
+      "properties": {
+        "name": "Exception process",
+        "process_kind": "exception",
+        "steps": "Claim may leave the standard path only when ALL conditions hold: carrier-documented weather ground-stop or customs hold with written notice; signature-required delivery requested; Claims Supervisor records rationale before any payment above schedule. No goodwill exception."
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Weather ground-stop or customs hold",
+      "entity_type": "Exception_Condition",
+      "properties": {
+        "name": "Weather ground-stop or customs hold",
+        "condition_text": "The delay is caused by a weather ground-stop documented by the carrier, or by a customs hold with a written notice",
+        "must_all_hold": true
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Signature-required delivery requested",
+      "entity_type": "Exception_Condition",
+      "properties": {
+        "name": "Signature-required delivery requested",
+        "condition_text": "The shipper requested signature-required delivery",
+        "must_all_hold": true
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Supervisor rationale before payment above schedule",
+      "entity_type": "Exception_Condition",
+      "properties": {
+        "name": "Supervisor rationale before payment above schedule",
+        "condition_text": "A supervisor (role: Claims Supervisor) records a short rationale in the claim file before any payment above the schedule",
+        "must_all_hold": true
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Claims Supervisor",
+      "entity_type": "Role",
+      "properties": {
+        "name": "Claims Supervisor",
+        "responsibilities": "Records the exception rationale in the claim file before any payment above the schedule"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Head of Claims",
+      "entity_type": "Role",
+      "properties": {
+        "name": "Head of Claims"
+      },
+      "confidence": 0.85,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Overnight courier adjuster",
+      "entity_type": "Role",
+      "properties": {
+        "name": "Overnight courier adjuster",
+        "responsibilities": "Verifies the airway bill against the declared contents list; applies the standard path"
+      },
+      "confidence": 0.85,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Priya Nandakumar",
+      "entity_type": "Person",
+      "properties": {
+        "name": "Priya Nandakumar",
+        "email": "claims-ops@northwind.example"
+      },
+      "confidence": 0.85,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Carrier delay certificate",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Carrier delay certificate",
+        "acceptable": true
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Customs hold letter",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Customs hold letter",
+        "acceptable": true
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Signed delivery request",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Signed delivery request",
+        "acceptable": true
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Chat screenshot",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Chat screenshot",
+        "acceptable": false
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "describes",
+      "source_name": "Claims exception memo (12 March 2026)",
+      "source_type": "Claims_Document",
+      "target_name": "Exception process",
+      "target_type": "Claims_Process",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "describes",
+      "source_name": "Claims exception memo (12 March 2026)",
+      "source_type": "Claims_Document",
+      "target_name": "Standard path",
+      "target_type": "Claims_Process",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "references",
+      "source_name": "Claims exception memo (12 March 2026)",
+      "source_type": "Claims_Document",
+      "target_name": "Endorsement C-14",
+      "target_type": "Claims_Document",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "requires_condition",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Weather ground-stop or customs hold",
+      "target_type": "Exception_Condition",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "requires_condition",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Signature-required delivery requested",
+      "target_type": "Exception_Condition",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "requires_condition",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Supervisor rationale before payment above schedule",
+      "target_type": "Exception_Condition",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "requires_approval_from",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Claims Supervisor",
+      "target_type": "Role",
+      "properties": {
+        "must_record": "short rationale in the claim file",
+        "timing": "before any payment above the schedule"
+      },
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "accepts_evidence",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Carrier delay certificate",
+      "target_type": "Evidence_Type",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "accepts_evidence",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Customs hold letter",
+      "target_type": "Evidence_Type",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "accepts_evidence",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Signed delivery request",
+      "target_type": "Evidence_Type",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "rejects_evidence",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Chat screenshot",
+      "target_type": "Evidence_Type",
+      "properties": {},
+      "confidence": 0.85
+    },
+    {
+      "relationship_type": "owned_by",
+      "source_name": "Claims exception memo (12 March 2026)",
+      "source_type": "Claims_Document",
+      "target_name": "Priya Nandakumar",
+      "target_type": "Person",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "holds_role",
+      "source_name": "Priya Nandakumar",
+      "source_type": "Person",
+      "target_name": "Head of Claims",
+      "target_type": "Role",
+      "properties": {},
+      "confidence": 0.9
+    }
+  ]
+}

@@ -636,11 +636,11 @@ def test_ac_b7():
 
     # Verify CI guard scripts exist.
     import os
+    # GrACE-Demo: the frontend-bound guards (api-contract, no-third-party)
+    # were removed with the web UI; the remaining guards still ship.
     guards = [
         "scripts/check-regeneration-unchanged.sh",
         "scripts/check-retrieval-unchanged.sh",
-        "scripts/check-api-contract.sh",
-        "scripts/check-no-third-party.sh",
         "scripts/lint/check-migration-revision-ids.sh",
     ]
     for guard in guards:

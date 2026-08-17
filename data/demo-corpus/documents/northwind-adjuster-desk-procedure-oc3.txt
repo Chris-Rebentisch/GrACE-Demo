@@ -1,0 +1,50 @@
+# Northwind Claims Operations — Adjuster Desk Procedure OC-3: Overnight Courier Claims (FICTIONAL)
+
+Owner: Claims Operations (Head of Claims: Priya Nandakumar)
+Version: 3, revised 20 March 2026
+Audience: overnight courier adjusters and Claims Supervisors
+
+Teaching sample for GrACE-Demo. No real employees, claimants, or claim numbers.
+
+## Roles
+
+- **Overnight courier adjuster** — opens the claim, verifies documents, applies
+  the Endorsement C-14 schedule, and closes the claim on the standard path.
+- **Claims Supervisor** — the only role that may record the exception rationale
+  and approve a payment above the schedule.
+- **Head of Claims** — owns this procedure and the exception memo; resolves
+  disputes between an adjuster and a supervisor.
+
+## Standard path — step by step
+
+1. Confirm the notice of loss arrived within 48 hours of the scheduled delivery
+   window. If it did not, decline under the notice condition and record the
+   timestamp evidence.
+2. Match the airway bill to the declared contents list. A mismatch is escalated
+   to the Claims Supervisor before any settlement.
+3. Classify the loss (delay, partial loss or damage, total loss) and apply the
+   Endorsement C-14 schedule.
+4. Attach the evidence: airway bill, declared contents list, and — for delay
+   claims — the carrier's delivery scan history.
+5. Settle and close. Standard-path claims do not need supervisor approval.
+
+## When an adjuster believes an exception applies
+
+Do not decide the exception yourself. Send the file to a Claims Supervisor with:
+
+- the carrier delay certificate (weather ground-stop) or the customs hold letter;
+- proof that signature-required delivery was requested on the airway bill;
+- a one-paragraph note of why the standard schedule is inadequate.
+
+The supervisor records the rationale in the claim file. Only after that
+rationale exists may a payment above the schedule be released.
+
+## Evidence rules
+
+Acceptable: carrier delay certificate, customs hold letter, signed delivery
+request, carrier delivery scan history. Not acceptable: chat screenshots,
+verbal assurances, or an unsigned email from the shipper.
+
+## Contact
+
+Procedure questions: claims-ops@northwind.example (fictional).

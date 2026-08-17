@@ -1,0 +1,143 @@
+{
+  "entities": [
+    {
+      "name": "Endorsement C-14",
+      "entity_type": "Claims_Document",
+      "properties": {
+        "name": "Endorsement C-14",
+        "document_kind": "endorsement",
+        "effective_date": "2026-01-01"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Claims exception memo (12 March 2026)",
+      "entity_type": "Claims_Document",
+      "properties": {
+        "name": "Claims exception memo (12 March 2026)",
+        "document_kind": "memo"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Adjuster desk procedure OC-3",
+      "entity_type": "Claims_Document",
+      "properties": {
+        "name": "Adjuster desk procedure OC-3",
+        "document_kind": "procedure"
+      },
+      "confidence": 0.85,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Standard path",
+      "entity_type": "Claims_Process",
+      "properties": {
+        "name": "Standard path",
+        "process_kind": "standard"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Delay beyond the delivery window (no damage)",
+      "entity_type": "Loss_Category",
+      "properties": {
+        "name": "Delay beyond the delivery window (no damage)",
+        "standard_settlement": "25% of declared value",
+        "cap_per_shipment": "2,500"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Partial loss or damage",
+      "entity_type": "Loss_Category",
+      "properties": {
+        "name": "Partial loss or damage",
+        "standard_settlement": "Repair or replacement cost, whichever is lower",
+        "cap_per_shipment": "Declared value"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Total loss (shipment not delivered)",
+      "entity_type": "Loss_Category",
+      "properties": {
+        "name": "Total loss (shipment not delivered)",
+        "standard_settlement": "Declared value",
+        "cap_per_shipment": "50,000"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Claims Supervisor",
+      "entity_type": "Role",
+      "properties": {
+        "name": "Claims Supervisor"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "describes",
+      "source_name": "Endorsement C-14",
+      "source_type": "Claims_Document",
+      "target_name": "Standard path",
+      "target_type": "Claims_Process",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "has_loss_category",
+      "source_name": "Endorsement C-14",
+      "source_type": "Claims_Document",
+      "target_name": "Delay beyond the delivery window (no damage)",
+      "target_type": "Loss_Category",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "has_loss_category",
+      "source_name": "Endorsement C-14",
+      "source_type": "Claims_Document",
+      "target_name": "Partial loss or damage",
+      "target_type": "Loss_Category",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "has_loss_category",
+      "source_name": "Endorsement C-14",
+      "source_type": "Claims_Document",
+      "target_name": "Total loss (shipment not delivered)",
+      "target_type": "Loss_Category",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "references",
+      "source_name": "Endorsement C-14",
+      "source_type": "Claims_Document",
+      "target_name": "Claims exception memo (12 March 2026)",
+      "target_type": "Claims_Document",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "references",
+      "source_name": "Endorsement C-14",
+      "source_type": "Claims_Document",
+      "target_name": "Adjuster desk procedure OC-3",
+      "target_type": "Claims_Document",
+      "properties": {},
+      "confidence": 0.9
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+[
+  {
+    "canonical_text": "What is the exception process for overnight courier claims?",
+    "cq_type": "FOUNDATIONAL",
+    "domain": "insurance",
+    "priority": "HIGH",
+    "rationale": "Headline question the corpus exists to answer.",
+    "evidence_files": [
+      "northwind-overnight-exception-memo.txt"
+    ],
+    "confidence": 0.95
+  },
+  {
+    "canonical_text": "Which conditions must all be true before an overnight courier claim may leave the standard path?",
+    "cq_type": "RELATIONSHIP",
+    "domain": "insurance",
+    "priority": "HIGH",
+    "rationale": "Forces the exception process to be linked to its individual conditions.",
+    "evidence_files": [
+      "northwind-overnight-exception-memo.txt"
+    ],
+    "confidence": 0.9
+  },
+  {
+    "canonical_text": "Which role must record a rationale before a payment above the settlement schedule?",
+    "cq_type": "RELATIONSHIP",
+    "domain": "insurance",
+    "priority": "HIGH",
+    "rationale": "Approval role attached to the exception process and to payments above schedule.",
+    "evidence_files": [
+      "northwind-overnight-exception-memo.txt",
+      "northwind-adjuster-desk-procedure-oc3.txt"
+    ],
+    "confidence": 0.9
+  },
+  {
+    "canonical_text": "Within how many hours must notice of loss arrive for an overnight courier claim?",
+    "cq_type": "FOUNDATIONAL",
+    "domain": "insurance",
+    "priority": "MEDIUM",
+    "rationale": "Standard-path deadline; a property on the standard path or the memo.",
+    "evidence_files": [
+      "northwind-overnight-exception-memo.txt"
+    ],
+    "confidence": 0.9
+  },
+  {
+    "canonical_text": "Which endorsement defines the settlement schedule for overnight courier claims, and what are its loss categories and caps?",
+    "cq_type": "SCOPING",
+    "domain": "insurance",
+    "priority": "HIGH",
+    "rationale": "Endorsement C-14 as an entity with a schedule of loss categories.",
+    "evidence_files": [
+      "northwind-endorsement-c14-settlement-schedule.txt"
+    ],
+    "confidence": 0.9
+  },
+  {
+    "canonical_text": "What forms of evidence are acceptable, and which are explicitly not acceptable, for a courier claim exception?",
+    "cq_type": "VALIDATING",
+    "domain": "insurance",
+    "priority": "MEDIUM",
+    "rationale": "Evidence types with an accepted/rejected flag; negative evidence (chat screenshots).",
+    "evidence_files": [
+      "northwind-overnight-exception-memo.txt",
+      "northwind-adjuster-desk-procedure-oc3.txt"
+    ],
+    "confidence": 0.85
+  },
+  {
+    "canonical_text": "Which documents describe or govern the overnight courier exception process, and how do they reference each other?",
+    "cq_type": "RELATIONSHIP",
+    "domain": "insurance",
+    "priority": "MEDIUM",
+    "rationale": "Memo, endorsement and desk procedure cross-reference one another.",
+    "evidence_files": [
+      "northwind-endorsement-c14-settlement-schedule.txt",
+      "northwind-adjuster-desk-procedure-oc3.txt"
+    ],
+    "confidence": 0.8
+  },
+  {
+    "canonical_text": "Who owns the adjuster desk procedure and the exception memo?",
+    "cq_type": "RELATIONSHIP",
+    "domain": "insurance",
+    "priority": "LOW",
+    "rationale": "Person/role ownership of documents.",
+    "evidence_files": [
+      "northwind-adjuster-desk-procedure-oc3.txt"
+    ],
+    "confidence": 0.8
+  },
+  {
+    "canonical_text": "What are the steps of the standard path for an overnight courier claim?",
+    "cq_type": "FOUNDATIONAL",
+    "domain": "insurance",
+    "priority": "MEDIUM",
+    "rationale": "Ordered procedure steps.",
+    "evidence_files": [
+      "northwind-adjuster-desk-procedure-oc3.txt"
+    ],
+    "confidence": 0.85
+  },
+  {
+    "canonical_text": "Is there any goodwill exception for overnight courier claims?",
+    "cq_type": "VALIDATING",
+    "domain": "insurance",
+    "priority": "LOW",
+    "rationale": "Negative-evidence check \u2014 the memo explicitly forbids inventing one.",
+    "evidence_files": [
+      "northwind-overnight-exception-memo.txt"
+    ],
+    "confidence": 0.8
+  }
+]

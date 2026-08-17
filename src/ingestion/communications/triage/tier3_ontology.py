@@ -67,7 +67,18 @@ async def build_ontology_embedding_matrix(
     if not descriptions:
         return np.array([]), []
 
-    embeddings = await embed_texts(descriptions, base_url=ollama_base_url, model=model)
+    # GrACE-Demo: no embeddings vendor → Tier 3 degrades to pass-through
+    # (run_tier3_batch treats an empty matrix as "no ontology").
+    from src.shared.embeddings import embeddings_enabled
+
+    if not embeddings_enabled(ollama_base_url):
+        logger.info("triage_tier3_skipped_embeddings_disabled")
+        return np.array([]), []
+    try:
+        embeddings = await embed_texts(descriptions, base_url=ollama_base_url, model=model)
+    except Exception as exc:  # noqa: BLE001 — degrade to pass-through, never crash triage
+        logger.warning("triage_tier3_embed_failed_pass_through", error=str(exc))
+        return np.array([]), []
     return np.array(embeddings), labels
 
 
@@ -97,7 +108,11 @@ async def run_tier3_batch(
     if not texts:
         return [None] * len(events)
 
-    event_embeddings = await embed_texts(texts, base_url=ollama_base_url, model="nomic-embed-text")
+    try:
+        event_embeddings = await embed_texts(texts, base_url=ollama_base_url, model="nomic-embed-text")
+    except Exception as exc:  # noqa: BLE001 — degrade to pass-through
+        logger.warning("triage_tier3_embed_failed_pass_through", error=str(exc))
+        return [None] * len(events)
     event_matrix = np.array(event_embeddings)
 
     results: list[str | None] = []

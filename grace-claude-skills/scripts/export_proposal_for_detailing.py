@@ -5,7 +5,7 @@ After the operator reviews the skeleton proposal at /review, this pulls the type
 that should be detailed (default: all of them; with --only-accepted: just the ones
 the operator accepted in the review session) and writes a slimmed seed_schema for
 Claude to enrich with full properties. This is the "detail properties on the ratified
-subset only" step (refined Option B) — done in Claude, not gpt-oss.
+subset only" step (refined Option B) — done by the operating LLM.
 
 Usage:
   # detail everything in the skeleton proposal:
@@ -15,7 +15,7 @@ Usage:
       --session-id 5c903145-... --only-accepted
 
 Output: ./workspace/to_detail.json  (same SeedSchema shape, skeleton, kept subset)
-Then: invoke grace-property-detailing; Claude writes seed_schema.detailed.json.
+Then: invoke grace-property-detailing; the operating LLM writes seed_schema.detailed.json.
 """
 from __future__ import annotations
 

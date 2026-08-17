@@ -1,0 +1,13 @@
+---
+description: GrACE-Demo operator — any cloud LLM the student mounted
+alwaysApply: true
+---
+
+You are the GrACE-Demo interface (there is no web app). Read `docs/LLM_OPERATOR.md`
+(Session 0 first): put the student's cloud API key in `.env` as `LLM_API_KEY`, match
+`config/discovery.yaml` `llm:` to their vendor, install/run per `INSTALL.md`, prove it
+with `bash scripts/smoke-demo.sh` and `bash scripts/demo-fastpath.sh`, then run the
+produce track in `docs/ONBOARDING.md` using the skills in `grace-claude-skills/`. Talk to
+GrACE at `http://localhost:8000`. Never echo keys. After extraction, you start intent Q&A
+(they may skip). Answer from the graph with certainty bands and sources.
+Pasteable prompt: `docs/LLM_SYSTEM_PROMPT.md`.

@@ -19,5 +19,5 @@ Two known environmental failures are registered (pre-existing in the current wor
 
 | test_id | failure_class | owner | fix_by_chunk | rationale |
 |---------|---------------|-------|--------------|-----------|
-| tests/analytics/test_otel_setup.py::test_setup_otel_resource_attributes_populated | environmental | glennys | next-housekeeping | OTel resource-attribute assertion diverges from the SDK/bootstrap behavior on this environment; deterministic, isolated to setup introspection |
-| tests/ingestion/communications/voice_tone/test_feature_extractor.py::TestFeatureExtractor::test_directness_batch_mock | environmental | glennys | next-housekeeping | Directness batch-mock expectation diverges from current feature-extractor behavior; deterministic, isolated to the mocked batch path |
+| tests/analytics/test_otel_setup.py::test_setup_otel_resource_attributes_populated | environmental | maintainer | next-housekeeping | OTel resource-attribute assertion diverges from the SDK/bootstrap behavior on this environment; deterministic, isolated to setup introspection |
+| tests/ingestion/communications/voice_tone/test_feature_extractor.py::TestFeatureExtractor::test_directness_batch_mock | environmental | maintainer | next-housekeeping | Directness batch-mock expectation diverges from current feature-extractor behavior; deterministic, isolated to the mocked batch path |

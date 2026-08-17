@@ -8,6 +8,7 @@ write-through; the parent aggregates the directory the way /metrics does.
 from __future__ import annotations
 
 import subprocess
+from pathlib import Path
 import sys
 
 import pytest
@@ -53,7 +54,7 @@ def test_child_process_counter_reaches_parent_aggregation(multiproc_dir):
         [sys.executable, "-c", _CHILD_SCRIPT],
         capture_output=True,
         text=True,
-        cwd="/Users/glennys/grace-CLLM-deploy",
+        cwd=str(Path(__file__).resolve().parents[2]),
         env={
             **__import__("os").environ,
             "PROMETHEUS_MULTIPROC_DIR": str(multiproc_dir),

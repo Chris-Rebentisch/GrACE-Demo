@@ -39,7 +39,7 @@ from _common import add_grace_to_path, route_logs_to_stderr  # noqa: E402
 async def _run(bundle: dict, ollama: str, dry_run: bool) -> None:
     add_grace_to_path()
     from src.graph.arcade_client import get_arcade_client
-    from src.shared.embeddings import embed_texts
+    from src.shared.embeddings import embed_texts, embeddings_enabled
     from src.extraction.intent_writer import (
         write_principle, write_rationale, write_counterfactual, write_mandatory_provision,
         link_intent, find_similar_principles, DEFAULT_PRINCIPLE_SIMILARITY,
@@ -55,12 +55,23 @@ async def _run(bundle: dict, ollama: str, dry_run: bool) -> None:
     # --- principles (embed statement+applies_when; surface dupes) -------------------
     pid: dict[str, str] = {}
     p_models = [DecisionPrinciple.model_validate(p) for p in bundle.get("principles", [])]
-    embs = []
-    if p_models:
-        embs = await embed_texts([f"{p.statement} Applies when: {p.applies_when}" for p in p_models],
-                                 base_url=ollama)
+    # Embeddings are optional (GrACE-Demo cloud-only default). Without a vectors
+    # backend principles are written without _embedding and near-duplicate
+    # detection is skipped — exact-name reuse in write_principle still applies.
+    embs: list = [None] * len(p_models)
+    if p_models and embeddings_enabled(ollama):
+        try:
+            embs = await embed_texts([f"{p.statement} Applies when: {p.applies_when}" for p in p_models],
+                                     base_url=ollama)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  [warn] embeddings failed ({type(exc).__name__}); writing principles without vectors",
+                  file=sys.stderr)
+            embs = [None] * len(p_models)
+    elif p_models:
+        print("  [info] embeddings disabled — principles written without vectors; "
+              "near-duplicate check skipped (exact-name reuse still applies)", file=sys.stderr)
     for p, e in zip(p_models, embs):
-        dupes = await find_similar_principles(c, e, threshold=DEFAULT_PRINCIPLE_SIMILARITY)
+        dupes = await find_similar_principles(c, e, threshold=DEFAULT_PRINCIPLE_SIMILARITY) if e else []
         dupes = [d for d in dupes if d["name"] != p.name]
         if dupes:
             print(f"  [canonicalize] '{p.name}' is similar to existing "
@@ -160,7 +171,8 @@ async def _run(bundle: dict, ollama: str, dry_run: bool) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--bundle", required=True, help="path to the confirmed decision bundle JSON")
-    ap.add_argument("--ollama", default="http://localhost:11434", help="Ollama base url for embeddings")
+    ap.add_argument("--ollama", default="http://localhost:11434",
+                    help="Embedding base URL when GRACE_EMBED_PROVIDER=ollama (ignored for cloud/none)")
     ap.add_argument("--dry-run", action="store_true", help="validate + surface dupes, write nothing")
     args = ap.parse_args()
     route_logs_to_stderr()

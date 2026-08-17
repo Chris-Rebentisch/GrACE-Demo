@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """STEP 1 (no LLM) — Export GrACE's processed documents into a corpus bundle
-that Claude Desktop can read for CQ authoring and ontology proposal.
+that the operating LLM can read for CQ authoring and ontology proposal.
 
 Reuses grace's own `build_balanced_document_text` so EVERY document in a domain
 gets an equal share of the character budget (head/middle/tail sampled for long
@@ -16,7 +16,7 @@ Usage:
   python3 export_corpus.py --domain legal --domain insurance
   python3 export_corpus.py --max-chars 120000 --out ./workspace/corpus
 
-NOTE: reads Postgres only. Does not touch Ollama / gpt-oss. No heat.
+NOTE: reads Postgres only. No LLM call.
 """
 from __future__ import annotations
 
@@ -24,12 +24,12 @@ import argparse
 import json
 from pathlib import Path
 
-from _common import add_grace_to_path, distinct_domains, get_session
+from _common import add_grace_to_path, route_logs_to_stderr, distinct_domains, get_session
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--grace-root", default=None, help="Path to the grace repo (default ~/grace)")
+    ap.add_argument("--grace-root", default=None, help="Path to the GrACE checkout (default: the checkout containing this script, or $GRACE_ROOT)")
     ap.add_argument("--domain", action="append", default=None,
                     help="Domain to export (repeatable). Default: every domain with COMPLETE docs.")
     ap.add_argument("--out", default="./workspace/corpus", help="Output directory")
@@ -38,6 +38,7 @@ def main() -> None:
     args = ap.parse_args()
 
     add_grace_to_path(args.grace_root)
+    route_logs_to_stderr(quiet=True)
     from src.discovery.domain_batcher import build_balanced_document_text  # noqa: E402
     from src.discovery.database import ProcessedDocumentRow  # noqa: E402
 
@@ -73,7 +74,7 @@ def main() -> None:
 
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"[export] manifest -> {out / 'manifest.json'}")
-    print(f"[export] DONE. Attach the per-domain .md files to Claude for CQ authoring (skill: grace-cq-authoring).")
+    print(f"[export] DONE. Read the per-domain .md files, then author CQs (skill: grace-cq-authoring).")
 
 
 if __name__ == "__main__":

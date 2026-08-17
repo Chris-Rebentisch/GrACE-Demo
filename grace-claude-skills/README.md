@@ -1,132 +1,98 @@
-# grace-claude-skills
+# grace-claude-skills — the produce track for any operating LLM
 
-Pipeline skills for **GrACE-Demo**. The folder name is historical (Claude Desktop).
-Any agent that can run bash + HTTP can use them (Claude, ChatGPT, Cursor, …).
+Step-by-step "skills" (one `SKILL.md` per folder) plus the deterministic helper
+scripts they call. The folder name is historical (they were first written for Claude
+Desktop); **any agent that can read files, run bash, and make HTTP calls can follow
+them** — Claude, ChatGPT / Codex, Gemini, Cursor, Copilot, …
 
-**Canonical operator docs (read these first):** [INSTALL.md](../INSTALL.md),
-[docs/LLM_OPERATOR.md](../docs/LLM_OPERATOR.md), [docs/ONBOARDING.md](../docs/ONBOARDING.md).
+**Read first:** [`docs/LLM_OPERATOR.md`](../docs/LLM_OPERATOR.md) (you are the demo
+interface; Session 0 = the student's cloud key + endpoints), then
+[`INSTALL.md`](../INSTALL.md) and [`docs/ONBOARDING.md`](../docs/ONBOARDING.md).
 
-Heat-producing steps (CQ generation, ontology proposal, property detailing, graph
-extraction) run on the **configured cloud LLM**, not a local 120B model. Ollama is
-optional.
+Set `GRACE_ROOT` to the checkout root (`export GRACE_ROOT="$PWD"`); every script also
+auto-detects the checkout it lives in. All heavy reasoning (CQs, ontology, extraction,
+intent Q&A) is **your own inference** — no local model is ever loaded. Embeddings are
+optional (see below).
 
-Set `GRACE_ROOT` to this checkout. Copy skill dirs into `~/.claude/skills/` only if
-you use Claude Desktop/Code.
+## The produce track (do these in order)
 
-> Older path examples that mention `~/grace-CLLM-deploy` or “Ollama required” are
-> stale. Use `GRACE_ROOT` and the Demo docs above.
+| Step | Skill | What happens | Who reasons |
+|---|---|---|---|
+| 0 | *(no skill)* | Process documents: `python -m src.discovery.batch_runner --source-dir data/demo-corpus/documents` | none (Docling) |
+| 1 | **grace-corpus-export** | Dump processed document text to `workspace/corpus/<domain>.md` | none (Postgres) |
+| 2 | **grace-cq-authoring** | You author competency questions → `workspace/cqs.json` → `import_cqs.py` | **you** |
+| 3 | **grace-ontology-proposal** | You author the schema → `workspace/seed_schema.json` → `map_coverage.py` | **you** |
+| 4 | **grace-auto-accept** | `auto_accept.py`: ratify as active ontology + ArcadeDB DDL (+ intent meta-layer). No human schema gate. | none (HTTP) |
+| 5 | **grace-property-detailing** *(optional)* | You fill full properties → re-run coverage + auto-accept | **you** |
+| 6 | **grace-graph-extraction** | You extract entities/relationships per document → `import_extraction.py` | **you** |
+| 7 | **grace-intent-elicitation** | **You interview the human for the *why*** (they may skip) → `intent_apply.py` | **you** (facilitator) |
+| ask | *(no skill)* | `POST /api/retrieval/query` (facts + evidence) and/or `POST /api/regeneration/query` (prose via the student's cloud vendor) | GrACE + vendor |
 
-## The skills (cards)
-| Skill | Step | What it does | LLM? |
-|-------|------|--------------|------|
-| **grace-corpus-export**     | 1 | Dump balanced per-domain document text for Claude to read | none (Postgres) |
-| **grace-cq-authoring**      | 2 | Claude authors CQs → import into live pipeline | **Claude** |
-| **grace-ontology-proposal** | 3 | Claude authors the skeleton proposal + heat-free coverage | **Claude** |
-| **grace-auto-accept**       | 4 | Auto-accept the proposal → active ontology + ArcadeDB DDL sync (human ratify bypassed) | none (HTTP) |
-| **grace-property-detailing**| 5 | *(optional)* Claude fills full properties → re-accept new version | **Claude** |
-| **grace-graph-extraction**  | 6 | Claude extracts entities/relationships per doc → ArcadeDB | **Claude** |
-| **grace-review-protocol**   | 7 | Human-in-the-loop tranche gate — facilitate fact review IN PLACE over the seeded graph (catch the extractor's mistakes) | **Claude** (facilitator) |
-| **grace-intent-elicitation**| 7b | Human-in-the-loop — extract human intent + rationale (the *why*) and bind it to facts as a queryable graph layer (ontology v#9 intent meta-layer). Sibling to 7: review catches what's wrong, this captures why it's right | **Claude** (facilitator) |
-| **grace-retrieval-probe**   | A1 | **Consume side** — prove the built graph can *answer*. Drives `POST /api/retrieval/query` + a Claude-wrapped Cypher router (text-to-Cypher → lint + EXPLAIN + execute); scores grounding/recall; fixes the structural-recall gap (1/6 → 100%) outside CF3. Golden gate 10/10. | **Claude** (text-to-Cypher) |
-| **grace-regeneration-probe** | A2 | Prove the graph can *answer in prose* — drives the D193-frozen PromptAssembler read-only, Claude decompresses the grounded context, scores **faithfulness** | **Claude** (decompression) |
-| **grace-signal-probe**      | A3 | Prove the graph *notices* its own ontology gaps — drives the six detectors (Signals A–F) via the sanctioned D246 CLI; scores recall / precision / substrate honesty | none (heat-free CLI) |
-| **grace-gap-remediation-harness** | A3 | Close the loop — Claude proposes ONE KGCL schema change per fired gap signal, scored on four co-signals (groundedness, well-formedness, gap-closure, non-regression) | **Claude** (proposer) |
-| **grace-correlation-probe** | A4 | Prove signals *correlate* into cross-module root-cause diagnoses — drives the correlation engine via its D246 CLI; Claude runs as the co-signal reasoner | **Claude** (reasoner) |
-| **grace-ingestion-harness** | C1 | Prove email → trustworthy graph facts — drives the ingestion CLIs over a Claude-authored synthetic golden email corpus in the grace_test sandbox | **Claude** (corpus author) |
-| **grace-testing-protocol**  | — | Three-tier tests, grace_test isolation, heat/Ollama rules (infra) | none |
+Consume-side probes (optional, for checking your own work): **grace-retrieval-probe**
+(does the graph answer?), **grace-regeneration-probe** (does it answer in prose,
+faithfully?), **grace-review-protocol** (facilitate a fact-review with the human),
+**grace-testing-protocol** (how the test suite is isolated).
 
-> **Two tracks now.** Skills 1–7b are the **onboarding/produce** track (seed the graph).
-> The A1–A4 probes and the C1 harness form the **consume/test** track (make the graph
-> answer, self-monitor, and ingest); `grace-testing-protocol` is shared infra. The
-> Claude-as-LLM module-test effort is indexed in `module-test-roadmap.md`; each tested
-> module becomes a sibling skill with its own `references/` design record + runnable probes
-> + a golden gate (the `grace-retrieval-probe` shape).
-
-All LLM steps run on Claude, so **gpt-oss:120b can stay unloaded for the whole
-onboarding.** Only nomic-embed-text (propose-time coverage, light) and Docling (CPU) run
-locally. The CQ merge is dropped on the Claude path (see note below).
+**LLM-free fast path** — proves the stack before you author anything:
+`bash scripts/demo-fastpath.sh` runs steps 0–6 with the shipped samples in
+`data/demo-corpus/samples/` and asks the graph a question.
 
 ## Helper scripts (`scripts/`)
-- `export_corpus.py` — STEP 1, balanced corpus export (reuses grace's own batcher).
-- `import_cqs.py` — STEP 2 persist; validates against `CompetencyQuestion`, `bulk_create_cqs`.
-- `export_seed_reference.py` — STEP 3 seed grounding (Option C): renders FIBO/LKIF/Schema.org/PROV-O for a domain via grace's own `format_for_llm` so Claude aligns to proven ontologies. Heat-free.
-- `map_coverage.py` — STEP 3 propose-time coverage (nomic-embed; fills `answerable_cqs` + `coverage_matrix`). **Replaces the merge's coverage role, heat-free.**
-- `auto_accept.py` — STEP 4: ratify the proposal as active ontology + `POST /api/graph/sync-schema` to ArcadeDB. **Replaces the human review/ratify gate.**
-- `import_proposal.py` — *(optional)* opens a browsable grace `/review` record; not required on the bypass path.
-- `export_proposal_for_detailing.py` — STEP 5 prep; slims the proposal to the kept subset.
-- `import_extraction.py` — STEP 6 persist; two-phase bulk-insert + grace_id lookup.
-- `safe_pytest.sh` — pytest wrapper enforcing grace_test isolation.
-- `_common.py` — shared repo-root/sys.path/DB-session bootstrap.
 
-> **No CQ merge on the Claude path.** The merge only compressed weak-model redundancy;
-> Claude authors a deduped, type-classified set, so it is skipped. Coverage (the only
-> useful merge output) is produced at propose time by `map_coverage.py`. The native
-> merge stays valid for the local-LLM onboarding path.
+| Script | Step | Purpose |
+|---|---|---|
+| `export_corpus.py` | 1 | balanced per-domain corpus export |
+| `import_cqs.py` | 2 | validate + persist CQs (`--dry-run` first) |
+| `export_seed_reference.py` | 3 | render FIBO / LKIF / Schema.org / PROV-O for grounding (optional) |
+| `map_coverage.py` | 3 | which CQ each type/relationship answers (embedding or lexical mode) |
+| `auto_accept.py` | 4 | ratify + `POST /api/graph/sync-schema` (+ intent meta-layer) |
+| `export_proposal_for_detailing.py` | 5 | slim the proposal for property detailing |
+| `import_extraction.py` | 6 | two-phase bulk insert with registry / exact-alias / (optional) ANN resolution; `--doc-file <name>` |
+| `intent_query.py` | 7 | `--facts '*'`, `--fact <gid>`, `--similar`, `--ask` |
+| `intent_apply.py` | 7 | write a confirmed decision bundle to the graph |
+| `import_proposal.py` | opt | open a browsable review record (not required) |
+| `retrieval_probe.py`, `retrieval_router.py`, `run_battery.py`, `retrieval_golden_gate.py`, `cypher_exec.py` | probe | consume-side checks |
+| `regen_compose.py`, `regen_decompress.py`, `regeneration_golden_gate.py`, `faithfulness_score.py` | probe | regeneration checks |
+| `intent_golden_gate.py` | probe | intent-layer invariants (written for a legal validation corpus) |
+| `safe_pytest.sh` | infra | pytest wrapper enforcing test-DB isolation |
+| `_common.py` | infra | repo-root / `.env` / DB-session bootstrap |
 
-## References (`references/`)
-- `workflow-pipeline.md` — the full Ollama→Claude substitution map (start here).
-- `data-contracts.md` — exact DB/API field shapes the scripts validate against.
-- `cq-authoring-method.md` — the combined/A3 multi-perspective CQ method.
+## Embeddings are optional
 
-## Full quick-path (uvicorn running; gpt-oss UNLOADED)
-```bash
-cd ~/grace
-P=.venv/bin/python; S=~/grace-claude-skills/scripts
+`GRACE_EMBED_PROVIDER=auto` (the `.env.example` default) uses OpenAI-compatible
+embeddings only when a `GRACE_EMBED_API_KEY` is set or the chat vendor is real
+OpenAI; with an Anthropic / DeepSeek / Groq key it resolves to **none**. Everything
+still works: `map_coverage.py` runs in lexical mode, `import_extraction.py` skips ANN
+resolution (registry + exact/alias dedup remain), retrieval uses BM25 + graph, and
+intent principles are stored without vectors. Set `GRACE_EMBED_API_KEY` (or
+`GRACE_EMBED_PROVIDER=ollama` with a local `nomic-embed-text`) to turn vectors on.
 
-$P $S/export_corpus.py                                              # 1 export corpus
-#   → grace-cq-authoring: Claude writes workspace/cqs.json          # 2 author CQs
-$P $S/import_cqs.py --in ./workspace/cqs.json --domain legal
-$P $S/export_seed_reference.py --domain legal                            # 3 seed grounding (Option C, optional)
-#   → grace-ontology-proposal: Claude authors + aligns workspace/seed_schema.json  # 3 propose
-$P $S/map_coverage.py --in ./workspace/seed_schema.json --domain legal   # 3 coverage (heat-free)
-$P $S/auto_accept.py  --in ./workspace/seed_schema.json                  # 4 auto-accept: ratify + ArcadeDB sync (no human gate)
-#   → (optional 5) grace-property-detailing: Claude details props, then map_coverage + auto_accept again
-#   → grace-graph-extraction: Claude writes workspace/extraction_<doc>.json  # 6 extract
-$P $S/import_extraction.py --in ./workspace/extraction_<doc>.json --doc-id <UUID> --module legal
-#   → inspect at http://localhost:3000/graph
-```
+## Decisions baked in
 
-## Decisions locked (operator, 2026-06-10)
-1. **CQ import status → ACCEPTED** (default) so the canonical pipeline treats Claude
-   CQs as review-ready.
-2. **CQ merge dropped on the Claude path** (2026-06-10). The merge only compressed
-   weak-model redundancy; Claude authors a deduped set. Coverage moved to propose time
-   via `map_coverage.py` (heat-free). Native merge stays valid for the local-LLM path.
-3. **review/start merge_run_id → synthetic by default.** Verified in source:
-   `review_ops.start_review_session` stores `merge_run_id` for traceability only and
-   **never dereferences it** — it builds the session directly from `seed_schema_data`,
-   so any id is accepted. With the merge dropped, `import_proposal.py` falls back to a
-   synthetic `claude-proposal-<uuid>` id (still auto-uses a real merge-latest id if one
-   happens to exist).
-4. **CQ provenance → HUMAN_AUTHORED** (operator-curated), not a claude-desktop tag.
-   `metadata_extra.authoring_method="combined-a3"` retained for audit.
-5. **Human ontology ratification → BYPASSED** (2026-06-10). `auto_accept.py` ratifies +
-   syncs the Claude proposal programmatically; grace's `/review` + ratify code stays but
-   is not required. Verified standalone: `POST /api/ontology/ratify` accepts a hand-built
-   `schema_json` with no review session, then `POST /api/graph/sync-schema` pushes DDL to
-   ArcadeDB. See memory `project-skip-human-ontology-ratification`.
-6. **Seed grounding → Option C (kept, Claude-as-context)** (2026-06-10). The proven
-   domain seeds (FIBO/LKIF/Schema.org/PROV-O) are fed to **Claude** as reference via
-   `export_seed_reference.py` (reuses grace's `seed_registry` + `format_for_llm`), so the
-   ontology aligns to standards without gpt-oss. Optional per run — skip it for a purely
-   internal ontology; use it when interoperability/standards alignment matters. Claude
-   fills `seed_source`/`seed_type_name`/`provenance="seed_aligned"` on aligned elements.
+1. **CQ import status → ACCEPTED**, `source=HUMAN_AUTHORED` (operator-curated),
+   `metadata_extra.authoring_method="combined-a3"`.
+2. **No CQ merge on this path.** You author a deduped set; coverage is computed at
+   propose time by `map_coverage.py`.
+3. **Human ontology ratification → bypassed.** `auto_accept.py` ratifies + syncs
+   programmatically. GrACE's review/ratify code stays; nobody has to click through
+   schema types. Humans contribute the *why* (Step 7) instead.
+4. **Seed grounding is optional** (`export_seed_reference.py`); use it when
+   standards alignment matters.
+5. **Intent meta-layer is merged at auto-accept** so Step 7 has types to write to.
 
-## Known limitations to verify before trusting at scale
-- **Auto-accept = `source="manual"`, version N+1 each run.** Each `auto_accept.py` ratifies
-  a new active `OntologyVersion` (OM4OV diff from predecessor); `sync-schema` is idempotent
-  per version. Property detailing (Step 5) re-accepts a new version (no in-place property
-  write-back endpoint exists — confirmed in source).
-- **Graph extraction has no entity resolution / dedup yet.** Endpoints match by
-  `(entity_type, name)` via the lookup endpoint; re-running on overlapping docs can create
-  duplicate vertices. Run docs once, or add a resolution pass before scaling. The lookup
-  also assumes each type carries a `name` property.
-- **Accept-before-extract.** Graph insertion requires the ontology active AND synced to
-  ArcadeDB (Step 4 `auto_accept.py` does both); undefined types fail at the DB.
+## Known limitations
 
-## Non-negotiables baked in
-- **Keep gpt-oss:120b unloaded.** The whole point is to not run it. `ollama stop`.
-- **Never test against the live `grace` corpus.** Use `safe_pytest.sh` / grace_test.
-- **Keep `GRACE_PERMISSION_ENFORCEMENT_ENABLED=0` during onboarding** (else review/start
-  403s `no_active_matrix`).
-- **Use the repo venv** (`~/grace/.venv/bin/python`); system python3 may be 3.9.
+- **Auto-accept = a new active version each run** (v1, v2, …). Property detailing
+  re-accepts a new version.
+- **Entity resolution without embeddings is exact/alias only.** Use the same `name`
+  for the same thing across documents (see grace-graph-extraction).
+- **Accept-before-extract.** Graph insertion requires the ontology active AND synced
+  to ArcadeDB (Step 4 does both); undefined types fail at the DB.
+
+## Non-negotiables
+
+- Databases are the ones in `.env` (`grace_demo`). Tests use an isolated `_test`
+  sibling (`safe_pytest.sh`, `tests/conftest.py`).
+- Keep `GRACE_PERMISSION_ENFORCEMENT_ENABLED=0` during onboarding.
+- Use the repo venv (`.venv/bin/python`); the system python may be too old.
+- Never print, log, or commit `LLM_API_KEY`.

@@ -1,68 +1,58 @@
-# GrACE-Demo — end-user manual
+# GrACE-Demo — for the human in the room
 
-This is for the person using the web UI (student, TA, presenter). Install is in [INSTALL.md](../INSTALL.md). Agents should read [LLM_OPERATOR.md](LLM_OPERATOR.md).
+You do not need to install anything by hand and there is no web app to open. **Your own
+cloud LLM is the interface** — Claude, ChatGPT / Codex, Cursor, Gemini, Copilot, any agent
+that can read files and run commands.
 
-## What you will do
+## Setup, in one sentence
 
-1. Point GrACE at documents (and optionally email).
-2. Let the LLM propose an ontology; the system **auto-accepts** it (no schema click-through).
-3. Extract facts into the graph.
-4. Ask questions in **Chat**. Answers show certainty bands and source links.
-5. Optionally capture *why* a decision was made (intent elicitation), not just *what* the documents say.
+Open this folder in that tool (or paste [LLM_SYSTEM_PROMPT.md](LLM_SYSTEM_PROMPT.md) into
+its custom instructions), tell it which cloud vendor you use, and give it an API key
+**once**. It puts the key in `.env` and will not show it back. If it asks you to install
+Docker / PostgreSQL / uv, [INSTALL.md](../INSTALL.md) has the exact commands for macOS,
+Windows and Linux.
 
-You do **not** design OWL types. You do **not** use a graph viewer in this demo (it was unreliable; ask the chat LLM if you want a picture).
+## What will happen
 
-## Screens (nav)
+1. It starts GrACE and proves the plumbing works (`scripts/smoke-demo.sh`,
+   `scripts/demo-fastpath.sh`).
+2. It reads the sample documents (`data/demo-corpus/`) — or your own folder.
+3. It writes the questions the knowledge should answer and proposes an ontology; GrACE
+   **auto-accepts** it. You do not click through schema types.
+4. It extracts the facts into the graph.
+5. It tells you it needs the *why* and asks you about the important facts, one at a
+   time. **You may skip.** If you skip, it continues from the documents only.
+6. You ask it questions in that same conversation. Answers carry a certainty band
+   (high / medium / low / insufficient evidence) and point at the source document.
 
-| Tab | Use it for |
-|---|---|
-| **Onboarding** | First-run checklist |
-| **Sources** | Choose folders/files to process |
-| **Ingestion** | Email sources (Gmail / IMAP / Exchange) — opt-in |
-| **Chat** | Ask questions; this is the human-in-the-loop |
-| **Inspector** | See what retrieval used for an answer |
-| **Claims** | Flagged extractions if verification quarantined a fact |
-| **Voice** | Communication style profiles + Voice Card export |
-| **Settings** | Cloud provider, model, API key, optional Ollama |
+## When it asks "why"
 
-Pages such as Guided Review, graph viewer, permissions, Grafana, and autonomy **are not in the demo nav** on purpose.
+Answer honestly, or say skip. The protocol it follows is [INTENT_QA.md](INTENT_QA.md):
+it shows you the fact first and must not suggest the answer; it asks one follow-up; it
+records how sure you are as a band, never a number; it reads back what it will store and
+you confirm or edit. The LLM must not invent your rationale.
 
-## Chat
+Try it on the sample: *"Why may an overnight courier claim leave the standard path only
+when all three conditions hold?"* — there is no right answer in the documents; that is
+the point.
 
-- Ask in plain language (“What does the policy say about exceptions?”).
-- Each substantive claim is tagged **high / medium / low / insufficient** — not a fake percentage.
-- Click through to the source span when you need to defend an answer.
-- If the LLM interviewer asks *why* you decided something, answer honestly. That intent is stored as graph structure so later questions can use it.
+## Good questions to ask afterwards
 
-## Documents
+- What is the exception process for overnight courier claims?
+- Who must record a rationale before a payment above the settlement schedule?
+- Which evidence is not acceptable, and where does that rule come from?
+- Should an adjuster be able to pay a rush claim above schedule on their own judgement?
+  (uses the *why* you gave, if you gave one)
 
-Use **Sources** to include the sample corpus under `data/demo-corpus/` first. Then add your own PDF/DOCX/TXT. Binary office files go through Docling.
-
-## Email (optional)
-
-You can run the whole demo with files only.
-
-To connect a live mailbox:
-
-1. **Gmail** — create a Google Cloud OAuth client (readonly Gmail scope). Put client id/secret in `.env` as documented in onboarding. Never commit them.
-2. **IMAP** — host, username, app password.
-3. **Exchange** — Microsoft Graph app, `Mail.Read`.
-
-Mail is **pulled read-only**. A thin filter drops empty/auto-reply noise, then relevant messages are extracted. Threads are reconstructed so the same conversation is not extracted twelve times. There is no “four-tier production plant” and no corroboration scorer in this demo.
-
-## Voice Cards
-
-After email is in the graph, **Voice** can build a communication style profile and export a Voice Card (markdown/json/yaml). This demo does **not** run PII redaction or a DPIA gate — do not export real colleagues’ mail in a public setting.
-
-## Settings
-
-- Pick Anthropic, OpenAI-compatible (ChatGPT, DeepSeek, Groq, Together), or optional Ollama.
-- Cloud embeddings are the default (`GRACE_EMBED_PROVIDER=openai`). Switch to Ollama embeddings only if the machine can spare it.
-- `airgap_mode` stays off unless you are fully local.
-
-## When something looks wrong
+## If something looks wrong
 
 1. `curl http://localhost:8000/api/health` → `{"status":"ok","product":"GrACE-Demo"}`
-2. `curl http://localhost:8000/api/graph/health` → ArcadeDB up
-3. Re-run `bash scripts/smoke-demo.sh`
-4. Check `.env` database names are `grace_demo`, not `grace`
+2. `curl http://localhost:8000/api/graph/health` → `"status":"ok"`
+3. `bash scripts/smoke-demo.sh` then `bash scripts/demo-fastpath.sh`
+4. `.env` databases are `grace_demo` (Postgres and ArcadeDB)
+5. Ask the LLM to show you the exact command that failed and its error.
+
+## Privacy
+
+Everything runs on your machine except calls to the cloud LLM you chose. Do not feed it
+documents you are not allowed to process. Your key lives only in `.env`, which git ignores.

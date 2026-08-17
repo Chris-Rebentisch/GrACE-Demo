@@ -1,12 +1,8 @@
 {
-  "_comment": "F-46: per-deployment dataset manifest. This packaged manifest selects the GOLD corpus files under the strict Testing-Standards contract; per-deployment datasets live in their own directories with their own (relaxed) manifests and are intentionally not listed here, so adding one never breaks the GOLD suite.",
-  "contract": "strict",
+  "_comment": "GrACE-Demo per-deployment golden dataset (relaxed contract). Hand-authored questions over the fictional Northwind sample corpus in data/demo-corpus/. Add your own <module>.json files (JSON arrays of GoldenCase) and list them here.",
+  "contract": "relaxed",
+  "min_total_cases": 1,
   "files": [
-    "corporate_structure.json",
-    "insurance.json",
-    "legal.json",
-    "operations.json",
-    "real_estate.json",
-    "vendors.json"
+    "demo_insurance.json"
   ]
 }

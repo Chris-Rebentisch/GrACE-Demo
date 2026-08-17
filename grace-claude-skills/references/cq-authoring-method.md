@@ -3,7 +3,7 @@
 This mirrors the native GrACE `cq_generation.generation_mode: combined` mode so
 Claude-authored CQs are interchangeable with native ones. The native engine made
 ONE multi-perspective, rationale-first, few-shot call per document group covering all
-docs. Claude does the same reasoning — better — without gpt-oss.
+docs. The operating LLM does the same reasoning directly.
 
 ## Principles
 1. **Schema-shaping, not fact-listing.** A CQ describes a question the *ontology*

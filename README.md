@@ -1,40 +1,86 @@
 # GrACE-Demo
 
-**Graph as Auditable Context Engine — college / classroom deployment.**
+**Graph as Auditable Context Engine — classroom / student edition.**
 
-GrACE turns documents (and optionally email) into an **auditable knowledge graph**. You ask questions in plain language. Every answer carries a certainty band and links back to source evidence.
+GrACE turns documents (and optionally email) into an **auditable knowledge graph**:
+every fact carries its source, a certainty band, and — uniquely — the *human's reasoning*
+for why things are the way they are. You ask questions in plain language; answers come
+from the graph with evidence.
 
-This repository is the **public demo cut**: cloud LLMs by default (Claude, ChatGPT, DeepSeek, Groq, …), cloud embeddings by default, ontology **auto-accepted** by the model (humans contribute intent in chat, not by clicking through schema review). It is **not** a dump of the internal GrACE factory or any customer corpus.
+**There is no web app in this demo. Your own cloud LLM is the interface.** Open this
+folder in Claude Code, Cursor, ChatGPT/Codex, Gemini, Copilot — any agent that can read
+files, run a terminal, and call HTTP — give it your API key once, and it:
 
-> Keep this repository **private** until `bash scripts/smoke-demo.sh` exits 0 **on the machine you will demo from**. Packaging smoke (API health, metrics, ArcadeDB, embeddings unit tests) and sample-ontology auto-accept were verified 2026-08-17. Chat-with-citation still needs your cloud `LLM_API_KEY` plus extraction (see [docs/ONBOARDING.md](docs/ONBOARDING.md)).
+1. installs and starts the GrACE stack (Postgres + ArcadeDB + the API),
+2. reads your documents and **authors** competency questions and an ontology,
+3. **auto-accepts** the ontology (no clicking through schema types),
+4. **extracts** facts into the graph,
+5. **interviews you for the *why*** behind the important facts (you may skip),
+6. answers your questions from the graph, with certainty bands and sources.
 
-## Read these, in order
+It works with **any** cloud vendor — Anthropic (Claude), OpenAI (ChatGPT), DeepSeek,
+Groq, Together, xAI, or any OpenAI-compatible endpoint. Embeddings are optional: with a
+chat-only key (Anthropic, DeepSeek, Groq, …) retrieval uses keyword + graph strategies.
 
-| Audience | Doc |
+## Start here
+
+| You are… | Read |
 |---|---|
-| Anyone installing | **[INSTALL.md](INSTALL.md)** |
-| End user (student / operator in the UI) | **[docs/USER_MANUAL.md](docs/USER_MANUAL.md)** |
-| LLM / coding agent driving the pipeline | **[docs/LLM_OPERATOR.md](docs/LLM_OPERATOR.md)** |
-| First document → graph → ask loop | **[docs/ONBOARDING.md](docs/ONBOARDING.md)** |
-| What is in vs out of this cut | **[docs/CHARTER.md](docs/CHARTER.md)** |
+| **An LLM / coding agent** the student mounted | **[docs/LLM_OPERATOR.md](docs/LLM_OPERATOR.md)** — your operating manual. Session 0 first. |
+| Pasting a system prompt into Claude / ChatGPT / Cursor | **[docs/LLM_SYSTEM_PROMPT.md](docs/LLM_SYSTEM_PROMPT.md)** (one page) |
+| A human installing the stack (or checking what the LLM did) | **[INSTALL.md](INSTALL.md)** |
+| Running the first document → graph → answer loop | **[docs/ONBOARDING.md](docs/ONBOARDING.md)** |
+| The human sitting with the LLM | **[docs/USER_MANUAL.md](docs/USER_MANUAL.md)** |
+| Curious what "intent Q&A" is | **[docs/INTENT_QA.md](docs/INTENT_QA.md)** |
+| Wondering what is in / out of this cut | **[docs/CHARTER.md](docs/CHARTER.md)** |
+| Wanting the whole-product background | [docs/GrACE-Product.md](docs/GrACE-Product.md) |
 
-## What a working demo looks like
+## The 10-minute version
 
-1. Install prerequisites (Docker, Postgres 17, uv, Node). **Ollama is optional.**
-2. `uv sync --extra dev` → ArcadeDB via Docker → `alembic upgrade head` → API + frontend.
-3. An LLM (or you) authors competency questions + a schema, then **auto-accepts** it.
-4. Extract facts from the sample corpus (or your files / Gmail / IMAP / Exchange).
-5. Ask in **Chat**. Inspect retrieval. Capture *why* via intent elicitation.
+```bash
+git clone <this repo> GrACE-Demo && cd GrACE-Demo
+# prerequisites: Docker, PostgreSQL 17, uv  (see INSTALL.md — macOS + Windows + Linux)
+uv python install 3.14 && uv sync --extra dev && source .venv/bin/activate
+cp .env.example .env            # put your cloud key in LLM_API_KEY; pick the vendor in config/discovery.yaml
+createdb grace_demo
+docker compose -f docker/docker-compose.arcade.yml up -d
+curl -s -u root:gracedev -X POST http://localhost:2480/api/v1/server \
+  -H 'Content-Type: application/json' -d '{"command":"create database grace_demo"}'
+alembic upgrade head
+uvicorn src.api.main:app --port 8000          # leave running; new terminal for the rest
+bash scripts/smoke-demo.sh                    # API + graph up
+bash scripts/demo-fastpath.sh                 # whole loop with shipped samples, no LLM call
+```
+
+Then hand the conversation to your LLM: it reads `docs/LLM_OPERATOR.md`, authors its
+own CQs / ontology / extractions for `data/demo-corpus/` (or your files) with the
+skills in `grace-claude-skills/`, and starts the intent Q&A.
+
+## What's in the box
+
+- `src/` — the GrACE engine (FastAPI on `:8000`; discovery, ontology, extraction,
+  graph, retrieval, regeneration, ingestion, MCP server, …).
+- `grace-claude-skills/` — the step-by-step skills + deterministic helper scripts the
+  operating LLM follows (any vendor; the folder name is historical).
+- `data/demo-corpus/` — a fictional insurance mini-corpus (3 documents + 1 email) and
+  reference sample outputs (`samples/`) so the loop can be proven without an LLM.
+- `scripts/smoke-demo.sh`, `scripts/demo-fastpath.sh`, `scripts/prefetch-models.sh`.
+- `docs/` — the manuals above.
 
 ## Defaults that matter
 
-- **Chat LLM:** cloud (Anthropic by default in `config/discovery.yaml`; switch in Settings).
-- **Embeddings:** cloud OpenAI-compatible, **768 dimensions** (ArcadeDB index compatible). Set `GRACE_EMBED_PROVIDER=ollama` only if you want a local embed model.
-- **Ontology:** auto-accept (`grace-claude-skills/grace-auto-accept`). No Guided Review gate.
-- **No graph viewer** in the nav (desktop LLMs can draw graphs; this UI was unreliable).
-- **No Grafana stack.** `GET /api/health` and `GET /metrics` are enough.
-- **Mail:** Gmail, IMAP, and Exchange are opt-in; sample `.txt` / `.eml` files work without connecting an inbox.
+- **LLM:** the student's cloud vendor (`config/discovery.yaml` `llm:` + `.env` `LLM_API_KEY`). Default vendor in the yaml is Anthropic; Session 0 switches it.
+- **Embeddings:** `GRACE_EMBED_PROVIDER=auto` — on only if an OpenAI-compatible embeddings key is available; otherwise off (keyword + graph retrieval).
+- **Ontology:** authored by the LLM, **auto-accepted** (`grace-auto-accept`).
+- **Databases:** Postgres `grace_demo`, ArcadeDB `grace_demo`. Tests use `_test` siblings.
+- **Not included:** web UI, Grafana/Prometheus, the internal analytics/governance harnesses (see the charter).
 
-## License / status
+## Safety / privacy
 
-Internal demo packaging for a college presentation. Do not publish customer documents, API keys, or GOLD dumps. `.env` is gitignored.
+`.env` is gitignored — never commit it or paste keys anywhere. The sample corpus is
+fictional. Do not point the demo at documents you are not allowed to process.
+Dev-only credentials (`root`/`gracedev` for ArcadeDB) are for localhost.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

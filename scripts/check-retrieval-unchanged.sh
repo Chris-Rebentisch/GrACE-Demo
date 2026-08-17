@@ -37,6 +37,7 @@ DIFF=$(git diff --name-only "${BASE_REF}" -- src/retrieval/ 2>/dev/null \
   | grep -v '^src/retrieval/document_chunk_strategy\.py$' \
   | grep -v '^src/retrieval/pipeline\.py$' \
   | grep -v '^src/retrieval/retrieval_config\.py$' \
+  | grep -v '^src/retrieval/reranker\.py$' \
   | tr -d ' ')
 # D466 (Chunk 71): 5th CF3 allowlist entry — document_chunk_strategy.py. PERMANENT.
 # D356 capture-the-why: CF3 retrieval-lock accumulator requires explicit D-number
@@ -47,6 +48,11 @@ DIFF=$(git diff --name-only "${BASE_REF}" -- src/retrieval/ 2>/dev/null \
 # D467 (Chunk 71): 7th CF3 allowlist entry — retrieval_config.py. PERMANENT.
 # D356 capture-the-why: retrieval_config.py gains chunk_semantic_enabled +
 # chunk_semantic_top_k config fields to gate the 5th strategy. D467.
+# GrACE-Demo (2026-08-17): 8th CF3 allowlist entry — reranker.py. PERMANENT.
+# Capture-the-why: the cross-encoder is loaded lazily and, when the model is
+# not cached (fresh student machine, HF_HUB_OFFLINE=1), the reranker degrades
+# to RRF order instead of failing every /api/retrieval/query with a 500.
+# Behaviour with a cached model is unchanged.
 
 if [ -n "${DIFF}" ]; then
   echo "ERROR: src/retrieval/* modified outside CF3 allowlist (D265 + D267). CF3 retrieval lock violated."

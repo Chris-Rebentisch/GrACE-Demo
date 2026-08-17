@@ -233,6 +233,9 @@ class ExtractionLLMClient:
                     global_base_url=global_base_url,
                     provider=provider,
                 )
+            # Empty base_url means the provider's own default (real OpenAI),
+            # mirroring src.shared.llm_provider.get_provider().
+            base_url = base_url or "https://api.openai.com/v1"
             kwargs["base_url"] = base_url
             api_key = settings.llm_api_key
             if not api_key:

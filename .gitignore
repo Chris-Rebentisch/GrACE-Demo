@@ -23,12 +23,15 @@ venv/
 docker/docker-compose.*.local.yml
 docker/docker-compose.*.override.yml
 
-# IDE
+# IDE / editors (the tracked .cursor/rules/ file is the exception)
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
+.pytest_cache/
+.cursor/*
+!.cursor/rules/
 
 # Claude Code auto-memory
 .claude/memory/
@@ -37,7 +40,7 @@ docker/docker-compose.*.override.yml
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
-# Node (for frontend later)
+# Node (no frontend in this demo; kept for safety)
 node_modules/
 .next/
 

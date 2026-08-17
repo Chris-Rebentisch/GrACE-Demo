@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -85,7 +86,7 @@ async def run_gates() -> dict:
     proc = subprocess.run(
         [sys.executable, "-m", "src.regeneration.cli", "--query",
          "gate probe heat check", "--dry-run"],
-        capture_output=True, text=True, cwd=os.path.expanduser("~/grace"), timeout=120)
+        capture_output=True, text=True, cwd=os.environ.get("GRACE_ROOT", str(Path(__file__).resolve().parents[2])), timeout=120)
     dry_ok = proc.returncode == 0 and "CONTEXT (empty in --dry-run)" in proc.stdout
     clean, cmsg = _ollama_clean()
     g("GATE-2 dry-run heat-free + empty-context", dry_ok and clean,

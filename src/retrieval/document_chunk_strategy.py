@@ -13,7 +13,7 @@ import structlog
 
 from src.graph.arcade_client import ArcadeClient
 from src.retrieval.retrieval_models import RetrievalCandidate
-from src.shared.embeddings import embed_texts
+from src.shared.embeddings import embed_texts, embeddings_enabled
 
 logger = structlog.get_logger()
 
@@ -37,7 +37,10 @@ async def chunk_semantic_search(
     Returns:
         List of RetrievalCandidate objects adapted from Document_Chunk vertices.
     """
-    # Embed the query
+    # Embed the query (skip cheaply when embeddings are disabled — GrACE-Demo
+    # cloud-only installs may have no embeddings vendor).
+    if not embeddings_enabled(ollama_base_url):
+        return []
     try:
         query_embedding = (await embed_texts(
             [query_text],

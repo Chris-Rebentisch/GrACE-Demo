@@ -16,31 +16,33 @@ logger = structlog.get_logger()
 async def embed_texts(
     texts: list[str], model: str = "nomic-embed-text"
 ) -> list[list[float]]:
-    """Generate embeddings for a list of texts via Ollama /api/embed.
+    """Generate embeddings for a list of texts (provider-aware).
 
-    Posts to Ollama's embedding endpoint with retry logic.
-    Returns a list of 384-dimensional float vectors.
+    Delegates to :func:`src.shared.embeddings.embed_texts`, so the discovery
+    pipeline honours ``GRACE_EMBED_PROVIDER`` (cloud OpenAI-compatible, local
+    Ollama, or disabled) instead of hard-wiring Ollama ``/api/embed``. Retries
+    transient HTTP failures; raises ``RuntimeError`` (or ``EmbeddingsDisabled``)
+    when no vectors can be produced so callers surface a clear error.
     """
+    from src.shared.embeddings import EmbeddingsDisabled
+    from src.shared.embeddings import embed_texts as _shared_embed_texts
+
     settings = get_settings()
     base_url = settings.ollama_base_url
-    url = f"{base_url}/api/embed"
-    payload = {"model": model, "input": texts}
 
     last_error = None
     for attempt in range(3):  # 1 initial + 2 retries
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(url, json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-                embeddings = data.get("embeddings", [])
-                logger.info(
-                    "embed_texts_complete",
-                    count=len(texts),
-                    embedding_dim=len(embeddings[0]) if embeddings else 0,
-                    attempt=attempt + 1,
-                )
-                return embeddings
+            embeddings = await _shared_embed_texts(texts, base_url, model=model, timeout=60.0)
+            logger.info(
+                "embed_texts_complete",
+                count=len(texts),
+                embedding_dim=len(embeddings[0]) if embeddings else 0,
+                attempt=attempt + 1,
+            )
+            return embeddings
+        except EmbeddingsDisabled:
+            raise
         except httpx.TimeoutException:
             last_error = "Request timed out"
             logger.warning(

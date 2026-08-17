@@ -1,0 +1,183 @@
+{
+  "entities": [
+    {
+      "name": "Adjuster desk procedure OC-3",
+      "entity_type": "Claims_Document",
+      "properties": {
+        "name": "Adjuster desk procedure OC-3",
+        "document_kind": "procedure",
+        "effective_date": "2026-03-20",
+        "version": "3"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Standard path",
+      "entity_type": "Claims_Process",
+      "properties": {
+        "name": "Standard path",
+        "process_kind": "standard"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Exception process",
+      "entity_type": "Claims_Process",
+      "properties": {
+        "name": "Exception process",
+        "process_kind": "exception"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Overnight courier adjuster",
+      "entity_type": "Role",
+      "properties": {
+        "name": "Overnight courier adjuster",
+        "responsibilities": "Opens the claim, verifies documents, applies the Endorsement C-14 schedule, closes the claim on the standard path"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Claims Supervisor",
+      "entity_type": "Role",
+      "properties": {
+        "name": "Claims Supervisor",
+        "responsibilities": "The only role that may record the exception rationale and approve a payment above the schedule"
+      },
+      "confidence": 0.95,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Head of Claims",
+      "entity_type": "Role",
+      "properties": {
+        "name": "Head of Claims",
+        "responsibilities": "Owns the procedure and the exception memo; resolves disputes between an adjuster and a supervisor"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Priya Nandakumar",
+      "entity_type": "Person",
+      "properties": {
+        "name": "Priya Nandakumar"
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Carrier delivery scan history",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Carrier delivery scan history",
+        "acceptable": true
+      },
+      "confidence": 0.85,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Verbal assurance",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Verbal assurance",
+        "acceptable": false
+      },
+      "confidence": 0.85,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Unsigned shipper email",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Unsigned shipper email",
+        "acceptable": false
+      },
+      "confidence": 0.85,
+      "sensitivity_tags": ""
+    },
+    {
+      "name": "Chat screenshot",
+      "entity_type": "Evidence_Type",
+      "properties": {
+        "name": "Chat screenshot",
+        "acceptable": false
+      },
+      "confidence": 0.9,
+      "sensitivity_tags": ""
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "describes",
+      "source_name": "Adjuster desk procedure OC-3",
+      "source_type": "Claims_Document",
+      "target_name": "Standard path",
+      "target_type": "Claims_Process",
+      "properties": {},
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "owned_by",
+      "source_name": "Adjuster desk procedure OC-3",
+      "source_type": "Claims_Document",
+      "target_name": "Priya Nandakumar",
+      "target_type": "Person",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "holds_role",
+      "source_name": "Priya Nandakumar",
+      "source_type": "Person",
+      "target_name": "Head of Claims",
+      "target_type": "Role",
+      "properties": {},
+      "confidence": 0.9
+    },
+    {
+      "relationship_type": "requires_approval_from",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Claims Supervisor",
+      "target_type": "Role",
+      "properties": {
+        "must_record": "the exception rationale in the claim file",
+        "timing": "before a payment above the schedule is released"
+      },
+      "confidence": 0.95
+    },
+    {
+      "relationship_type": "accepts_evidence",
+      "source_name": "Standard path",
+      "source_type": "Claims_Process",
+      "target_name": "Carrier delivery scan history",
+      "target_type": "Evidence_Type",
+      "properties": {},
+      "confidence": 0.85
+    },
+    {
+      "relationship_type": "rejects_evidence",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Verbal assurance",
+      "target_type": "Evidence_Type",
+      "properties": {},
+      "confidence": 0.8
+    },
+    {
+      "relationship_type": "rejects_evidence",
+      "source_name": "Exception process",
+      "source_type": "Claims_Process",
+      "target_name": "Unsigned shipper email",
+      "target_type": "Evidence_Type",
+      "properties": {},
+      "confidence": 0.8
+    }
+  ]
+}

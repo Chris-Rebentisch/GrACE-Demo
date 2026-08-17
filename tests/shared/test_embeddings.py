@@ -126,6 +126,9 @@ async def test_embed_texts_calls_ollama_endpoint(monkeypatch) -> None:
             )
 
     monkeypatch.setattr(httpx, "AsyncClient", _DummyClient)
+    # Legacy inference path: no explicit provider → an :11434 URL means Ollama.
+    # (Some pytest plugins export the repo .env into os.environ, so be explicit.)
+    monkeypatch.delenv("GRACE_EMBED_PROVIDER", raising=False)
 
     result = await embed_texts(
         ["alpha", "beta"],
@@ -197,3 +200,67 @@ async def test_embed_texts_openai_compatible_when_provider_set(monkeypatch) -> N
     assert captured["json"]["model"] == "text-embedding-3-small"
     assert captured["json"]["dimensions"] == 768
     assert captured["headers"]["Authorization"] == "Bearer sk-test"
+
+
+# --- GrACE-Demo: embeddings are optional (cloud-only students) -----------------
+
+
+def test_resolve_embed_provider_none_values(monkeypatch) -> None:
+    from src.shared.embeddings import embeddings_enabled, resolve_embed_provider
+
+    for value in ("none", "off", "disabled", "NONE"):
+        monkeypatch.setenv("GRACE_EMBED_PROVIDER", value)
+        assert resolve_embed_provider("http://127.0.0.1:11434") == "none"
+        assert embeddings_enabled("http://127.0.0.1:11434") is False
+
+
+def test_resolve_embed_provider_auto_prefers_dedicated_key(monkeypatch) -> None:
+    from src.shared.embeddings import resolve_embed_provider
+
+    monkeypatch.setenv("GRACE_EMBED_PROVIDER", "auto")
+    monkeypatch.setenv("GRACE_EMBED_API_KEY", "sk-test-embed")
+    assert resolve_embed_provider() == "openai"
+
+
+def test_resolve_embed_provider_auto_without_any_key_is_none(monkeypatch) -> None:
+    from src.shared import embeddings as mod
+
+    monkeypatch.setenv("GRACE_EMBED_PROVIDER", "auto")
+    monkeypatch.delenv("GRACE_EMBED_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setattr(mod, "_chat_vendor_serves_openai_embeddings", lambda: False)
+    assert mod.resolve_embed_provider() == "none"
+
+
+def test_resolve_embed_provider_auto_reuses_openai_chat_key(monkeypatch) -> None:
+    from src.shared import embeddings as mod
+
+    monkeypatch.setenv("GRACE_EMBED_PROVIDER", "auto")
+    monkeypatch.delenv("GRACE_EMBED_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_API_KEY", "sk-test-chat")
+    monkeypatch.setattr(mod, "_chat_vendor_serves_openai_embeddings", lambda: True)
+    assert mod.resolve_embed_provider() == "openai"
+    monkeypatch.setattr(mod, "_chat_vendor_serves_openai_embeddings", lambda: False)
+    assert mod.resolve_embed_provider() == "none"
+
+
+@pytest.mark.asyncio
+async def test_embed_texts_raises_typed_error_when_disabled(monkeypatch) -> None:
+    from src.shared.embeddings import EmbeddingsDisabled, embed_texts
+
+    monkeypatch.setenv("GRACE_EMBED_PROVIDER", "none")
+    with pytest.raises(EmbeddingsDisabled):
+        await embed_texts(["alpha"], base_url="http://127.0.0.1:11434")
+
+
+@pytest.mark.asyncio
+async def test_semantic_index_degrades_when_disabled(monkeypatch) -> None:
+    """With embeddings off, the semantic strategy is empty instead of crashing
+    (BM25 + graph strategies carry /api/retrieval/query)."""
+    from src.retrieval.semantic_strategy import SemanticSearchIndex
+
+    monkeypatch.setenv("GRACE_EMBED_PROVIDER", "none")
+    idx = SemanticSearchIndex("http://127.0.0.1:11434")
+    await idx.build_index([("g1", "Alpha: thing"), ("g2", "Beta: other")])
+    assert idx.embeddings is None
+    assert await idx.search("alpha") == []

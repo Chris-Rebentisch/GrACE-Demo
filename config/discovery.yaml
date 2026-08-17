@@ -1,20 +1,25 @@
 llm:
-  # GrACE-Demo: cloud LLM is the default brain. Switch provider/model in
-  # Settings or here. Ollama remains optional (local chat + optional local
-  # embeddings). airgap_mode must stay false for cloud providers.
+  # GrACE-Demo: the student's cloud LLM is the brain. Pick ONE vendor and set
+  # provider / model / base_url to match (see docs/LLM_OPERATOR.md, Session 0).
+  # The API key goes in .env as LLM_API_KEY — never here.
+  #
+  #   Claude (Anthropic)      provider: anthropic  model: claude-haiku-4-5-20251001  base_url: ""
+  #   ChatGPT (OpenAI)        provider: openai     model: gpt-4.1-mini               base_url: https://api.openai.com/v1
+  #   DeepSeek                provider: openai     model: deepseek-chat              base_url: https://api.deepseek.com/v1
+  #   Groq                    provider: openai     model: llama-3.3-70b-versatile    base_url: https://api.groq.com/openai/v1
+  #   Together / xAI / other  provider: openai     model: <vendor model id>          base_url: <vendor /v1 root>
+  #   Local Ollama (optional) provider: ollama     model: qwen2.5:7b                 base_url: http://localhost:11434
+  #
+  # base_url is ignored by the anthropic provider; leave it "" there. For
+  # provider: openai an empty base_url means https://api.openai.com/v1.
   provider: anthropic
   model: claude-haiku-4-5-20251001
-  # Used by the Ollama provider when selected in Settings. Cloud embeddings
-  # ignore this URL (see GRACE_EMBED_* in .env).
-  base_url: http://localhost:11434
+  base_url: ""
   timeout: 600
   structured_output: auto
   num_ctx: 65536
-  # OpenAI-compatible chat (ChatGPT / DeepSeek / Groq / Together): set
-  # provider: openai, model: gpt-4.1-mini (or deepseek-chat, etc.), and
-  # point base_url at that vendor's /v1 endpoint.
-# Cloud providers are enabled (airgap off) so the Anthropic provider can be used.
-# For an airgapped, fully-local install set airgap_mode: true and provider: ollama.
+# Cloud providers require airgap_mode: false. Set true only for a fully local
+# Ollama install.
 airgap_mode: false
 domain_categories:
 - corporate_structure

@@ -1,7 +1,7 @@
 [project]
-name = "grace"
+name = "grace-demo"
 version = "0.1.0"
-description = "Graph as Auditable Context Engine"
+description = "GrACE-Demo — Graph as Auditable Context Engine, classroom edition (the student's cloud LLM is the interface)"
 requires-python = ">=3.14"
 
 dependencies = [

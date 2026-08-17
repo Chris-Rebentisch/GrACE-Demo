@@ -1,0 +1,41 @@
+{
+  "_comment": "Example of what the operating LLM writes AFTER the human confirms an elicited why. Fact grace_ids are placeholders — resolve them with intent_query.py --facts '*' before running intent_apply.py. Fictional Northwind content.",
+  "reviewer": "human (facilitated by the operating LLM)",
+  "session_id": "demo-intent-session-1",
+  "principles": [
+    {
+      "name": "no_discretionary_exception_without_a_recorded_reason",
+      "statement": "A payment above the standard schedule is only allowed when an accountable person records the reason before the money moves.",
+      "applies_when": "Any process that lets a case leave a standard path and pay more than the schedule.",
+      "certainty_band": "high",
+      "domain_agnostic": true
+    }
+  ],
+  "rationale": {
+    "name": "courier_exception_requires_supervisor_rationale",
+    "summary": "The overnight courier exception requires all three conditions AND a Claims Supervisor rationale before paying above schedule so that goodwill exceptions cannot creep in unrecorded; the rationale is what makes the exception auditable.",
+    "constraint": "The settlement schedule in Endorsement C-14 is fixed; adjusters cannot change it.",
+    "stakes": "Without the recorded rationale, exception payments become untraceable and the schedule stops meaning anything.",
+    "leverage": "",
+    "negotiation": "",
+    "certainty_band": "high",
+    "resolver": "",
+    "controlling_reason": "Auditability of every payment above schedule.",
+    "subordinate_reasons": "Consistency between adjusters; fewer disputes with the shipper.",
+    "justifies_facts": ["<grace_id of Claims_Process 'Exception process'>"],
+    "applies_principles": ["no_discretionary_exception_without_a_recorded_reason"]
+  },
+  "counterfactuals": [
+    {
+      "name": "adjuster_discretion_goodwill_exception",
+      "description": "Let the adjuster grant a goodwill exception on their own judgement.",
+      "demanded": "No supervisor rationale; adjuster decides case by case.",
+      "why_rejected": "Untraceable exceptions; inconsistent outcomes; the memo explicitly says do not invent a goodwill exception.",
+      "is_term": false,
+      "rejected_alternative_to": "<grace_id of Claims_Process 'Exception process'>"
+    }
+  ],
+  "principle_explains": {
+    "no_discretionary_exception_without_a_recorded_reason": ["<grace_id of Claims_Process 'Exception process'>"]
+  }
+}

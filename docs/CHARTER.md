@@ -1,29 +1,40 @@
-# GrACE-Demo charter (locked)
+# GrACE-Demo charter
 
-College public-cut of GrACE. Scoping recorded 2026-08-17.
+Classroom / public cut of GrACE. Scope locked 2026-08-17.
 
 ## In
 
-- Demo loop: ingest → AI ontology → auto-accept → extract → Chat (certainty bands, citations, intent elicitation) → retrieval inspector → Settings
-- Cloud LLM default (Anthropic / OpenAI-compatible: ChatGPT, DeepSeek, Groq, Together, xAI)
-- Cloud embeddings default (768-dim); Ollama optional for embeddings and/or local chat
-- Postgres 17 + ArcadeDB + Docker + Alembic (databases named `grace_demo`)
-- Document formats, Discovery/extraction/retrieval depth, MCP server
-- `/metrics` + in-process OpenTelemetry (no Grafana)
-- Live Gmail, IMAP, Exchange (readonly, opt-in) + `.eml` fallback + thin triage + threads
-- Voice style profiles + Voice Card export (no PII redactor, no DPIA gate)
-- Photo vision (`generate_vision` + `Image_Asset`), opt-in
-- Golden dataset JSON as demo questions (DeepEval not in default install)
+- The demo loop: process documents → the operating LLM authors CQs + ontology →
+  **auto-accept** → the LLM extracts facts into the graph → **the LLM interviews the
+  human for intent (skippable)** → answers with certainty bands + sources.
+- **Any cloud LLM** as operator and as GrACE's configured vendor: Anthropic, OpenAI,
+  DeepSeek, Groq, Together, xAI, any OpenAI-compatible `/v1` (local Ollama optional).
+- Embeddings **optional** (`GRACE_EMBED_PROVIDER=auto`): on with an OpenAI-compatible
+  embeddings key, off otherwise (keyword + graph retrieval, exact-name resolution).
+- Postgres 17 + ArcadeDB (Docker) + Alembic; databases `grace_demo`.
+- Document formats via Docling (PDF, DOCX, XLSX, PPTX, HTML, TXT, MD, CSV, images);
+  discovery / extraction / retrieval / regeneration depth; MCP server; `/metrics`.
+- Email: `.eml` folder (shipped sample) + Gmail / IMAP / Exchange (read-only, opt-in),
+  triage tiers 1–4, extraction bridge, thread reconstruction.
+- Voice/tone profiles + Voice Card export; photo vision (`generate_vision`) — opt-in.
+- Golden dataset JSON over the sample corpus as demo questions (DeepEval not required).
+- `scripts/smoke-demo.sh` (plumbing) and `scripts/demo-fastpath.sh` (whole loop with
+  shipped samples, no LLM call) as the go/no-go gates.
 
 ## Out
 
-- Guided Review / human ontology ratification; Cytoscape graph viewer in nav
-- Grafana, dashboards, correlation engine, alerting; Signals A–F / agent daemon / calibration
-- Reconciliation, Change Directives, Decomposition, Permissions/Sensitivity, Federation, remote support
-- Four-tier mail plant, retriage scheduler, corroboration scorer
-- Bench4KE export; DeepEval as required runtime
-- GOLD dumps, customer documents, real secrets, chunk-lifecycle factory, full D-series archive
+- **Any web UI** (the student's LLM is the interface); Guided Review / human ontology
+  ratification; graph viewer.
+- Grafana / Prometheus dashboards and alerting; the internal analytics harnesses
+  (signals, correlation, gap remediation, ingestion golden gates), agent daemon,
+  calibration, reconciliation, change directives, decomposition, permissions /
+  sensitivity gate, federation, remote support (the code may exist under `src/`; it is
+  not part of the demo path).
+- Customer documents, GOLD dumps, real secrets, the internal chunk-lifecycle build
+  factory and its D-series archive.
 
 ## Human-in-the-loop
 
-Chat interrogation + intent elicitation. The model authors the ontology; `grace-auto-accept` activates it (CLLM 2026-06-10).
+Chat interrogation + intent elicitation **in the operating LLM's conversation**. The model
+authors the ontology; `grace-auto-accept` activates it. The human contributes the *why*
+and may skip.
